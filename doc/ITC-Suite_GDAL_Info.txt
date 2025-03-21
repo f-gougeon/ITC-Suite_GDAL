@@ -1,0 +1,1887 @@
+
+
+	ITC-Suite_GDAL_Info.txt
+
+	Simple description of the GDAL version of the ITC-Suite.
+
+	François A. Gougeon (Ph.D.)
+
+	Nov 2018, April 2020, July 2020, April-June 2021, June 2022, 
+	July 2023, Oct 2023, July 2024, Oct-Nov 2024, Jan 2025
+
+
+
+*******************************************************************************
+
+Introduction:
+
+	For more details on how to run the ITC-Suite, please check the ITC-Suite Manual from 2010:
+
+	Gougeon, F.A. 2010. The ITC Suite Manual : A Semi-Automatic Individual Tree Crown (ITC) Approach 
+	to Forest Inventories. Natural Resources Canada, Canadian Forest Service, Pacific Forestry Centre,
+ 	Victoria, B.C. Canada. June 2010. 92  p. 
+	http://cfs.nrcan.gc.ca/publications/?id=31918
+
+	The ITC-Suite, first developed for the ARIES image analysis system in the 90's,
+	mostly ran under PCI/XPACE, then PCI/EASI, with PCI/ImageWorks and later PCI/Geomatica 
+	to display and deal with PCI's ".pix" files (PCI v2010-2022 at this time)
+
+	Instead of a PCI file containning all, it is now assumed that all will be in 
+	a single "project directory": images as tif files, bitmap as 1-bit tif files, 
+	vector layers as shp files, signatures as discrete files, etc., and
+	that ArcGIS (or other software) may be used to view all these.
+
+	In order to deal with less items on the command line, file nomenclature is
+	often predefined, but often using a "base file name" from the main image file.
+
+	Having an image file name such as "BaseName_IRGB.tif" for example
+	will ensure that other files will be of the type "BaseName_aaaa.ext"
+	For examples, "BaseName_VFOL.tif"   as output from itcvfol_g.exe
+	or "BaseName_ISOL.tif"  as output from itcisol_g.exe
+	Of course the "BaseName" should reflects the name of the main project in that directory.
+	The underscore is use to separate the "base file name" from the rest of the file name.
+	Full directory path is now mostly supported (i.e., not fully tested yet as the philosophy 
+	was to do everything in the same directory from a "cmd windows"). However, it was needed
+	for the integration of the GDAL version of the Suite used with a ArcGIS Toolbox (GUI).
+
+	The GDAL version of the ITC-Suite can be used from ArcGIS or ArcGISPro via appropriate
+	toolboxes, allowing users to stay completely with that environment.
+
+
+	NOTE:	Partial use of a PCI file is often possible (as input). However,
+		user entered segment numbers will be that of GDAL, not of PCI.
+		Use "gdalinfo" and "ogrinfo" on the PCI file to find that order.
+		(e.g., bitmaps are numbered after images, vector layers are separate,
+		signature segments are not visible, ...)
+
+	NOTE:   The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
+		but should be used as guides, not gospel.
+
+	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
+		Most of the time, it is not an issue. However, sometimes when ArcGIS has control 
+		of the file, it may not overwrite at all and leave you with previous results
+
+*********************
+Ackowlegment to GDAL:
+
+GDAL - Geospatial Data Abstraction Library: Version 2.1.1 (July2016, 64bit), 
+GDAL - Geospatial Data Abstraction Library: Version 3.0.0 (Dec. 2019, 64bit),
+GDAL - Geospatial Data Abstraction Library: Version 3.3.3 (Dec. 2021, 64bit),
+GDAL - Geospatial Data Abstraction Library: Version 3.10
+
+Open Source Geospatial Foundation, 
+
+Thanks Frank (Warmerdam)
+
+
+*******************************************************************************
+*******************************************************************************
+
+REM	TO COMPILE: 
+
+*** To compile with Visual Studio (VS14) and GDAL 2.1.1 (also see VS14_GDAL_compile.txt)
+
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+
+set INCLUDE=C:\gdal-2.1.1_v2\include;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%INCLUDE%
+set LIB=C:\gdal-2.1.1_v2\lib;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+set LINK=gdal_i.lib  libtiff_i.lib User32.lib
+
+set CL= /MD
+
+CL convert_ima.cpp /EHsc
+
+***********************************************
+
+NOTE: Newest GDAL library have included "libtiff" no need to have it separately anymore
+	(see VS14_GDAL_compile.txt)
+
+set INCLUDE=D:\GDAL_3.0.0\include;%INCLUDE%
+set LIB=D:\GDAL_3.0.0\lib;%LIB%
+set LINK=gdal_i.lib  libtiff_i.lib User32.lib
+set CL= /MD
+CL xxxxxxxxx.cpp /EHsc
+
+
+***********************************************
+***********************************************
+
+REM	TO COMPILE: 
+
+REM	With Visual Studio 2019 v16.3.10 (x64) using the Community version
+
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall" amd64
+
+REM	For Visual Studio 2022   v17.5(x64)
+
+call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall" amd6
+
+REM	Then  ...
+
+set CL= /MD 
+
+set LINK=gdal_i.lib  proj_i.lib  User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X20000000
+
+	REM for GDAL version 3.3.3
+
+set LIB=C:\gdal_3.3.3\lib;%LIB%
+set INCLUDE=C:\gdal_3.3.3\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v333\exe
+
+CL %SRCDIR%\homogen_g.cpp  /EHsc
+
+***********************************************
+***********************************************
+
+REM 	TO RUN programs - For GDAL version 3.3.3
+
+
+REM	Where the ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v333\exe;%PATH%
+
+REM 	Where the GDAL libraies are located
+
+set PATH=C:\GDAL_3.3.3\bin;%PATH%
+
+REM   For the apps of GDAL (like gdalinfo)
+
+set path=C:\gdal_3.3.3\bin\gdal\apps;%PATH%
+
+REM   For the projection info
+
+set PROJ_LIB=C:\GDAL_3.3.3\bin\proj7\share
+
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.10.0 
+
+
+REM	Where the ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v310\exe;%PATH%
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\Program Files\GDAL;%PATH%
+
+
+REM   For the projection info
+
+set PROJ_LIB=C:\Program Files\GDAL\projlib
+
+
+
+********************************************************************************
+********************************************************************************
+
+NOTE: 	At this point in time, some of the examples given may not follow properly
+	the new file nomenclature based on an undersscore separating the
+	"base file name" from the rest. 
+	That is, other underscore in file name should be avoided.
+
+	2023 --- Other underscores in file name or directory are mostly tolerated now
+
+
+
+*******************************************************************************
+*******************************************************************************
+
+	To use with ArcGIS (Pro
+
+*******************************************************************************
+*******************************************************************************
+
+This document describe the "GDAL ITC-Suite programs" and their parameters as used
+from a "cmd window" (under the Windows operating system) or from a "terminal window"
+under a Linux operating system.
+
+However, they can be used from a convenient GUI under ArcGIS (from a ToolBox).
+Here, we will give the examples for ArcGISPro and GDAL v3.10
+
+The "ITC-Suite-GDAL-v3-10.tbx" toolbox shows a list of the "main" ITC-Suite programs.
+Clicking any of them will allow you to enter its parameters and run the program.
+
+*Before running* a program, one needs to run a script (once) that will setup the
+environment for the GDAL ITC-Suite and for GDAL, for example:  "GDAL_Setup_V3_10"
+that should be in that toolbox.
+
+This will call a Python program (GDAL_V3_10_Setup.py) that will do the setups.
+You may need to modify that program (within Arc or as a text file) if the locations
+of the GDAL ITC-Suite or GDAL itself (and geo projections) are different on your PC.
+
+
+N.B.: Some utility programs (below) are not listed in the ArcGIS toolbox.
+
+
+*******************************************************************************
+*******************************************************************************
+
+	Programs description, parameters and examples
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name: 	itcvfol_g.cpp
+	François A. Gougeon
+	Nov 2018, April 2020 ... Nov. 2024(v8.5)
+ 
+****************
+
+	PROGRAM USAGE - ITCVFOL
+
+   	was: IMPStatus("FILE,ILLUMCH,NFMASK,VFOLBIT,THRESGEN,REPORT;",
+
+	GDAL version examples: 
+
+c		- NOW: Allow user to specify an output file name (previously, was creating default name)
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif auto
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif - auto  (prog, will create output filename)
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif - (AUTO assumed)
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif  pre 50,200,1
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.pix 5,8 PRF_NIR_VFOL_v2.tif auto
+c				** PCI file still accepted where Ch5 is main image and BM8 is non-forest bitmap
+c				using gdal numbering scheme (not PCI)
+c
+
+	NOTE:	On an image like PRF_ADS_30x11_NIR_2FAV.tif, 
+		which is 75,000P x 27,500L x 40cm/pixel, or about 2GB per channel
+		itcvfol_g (one of the slowest program) can take about 9 minutes to run.
+
+****************
+
+c v7.0	 Oct 2018	François Gougeon
+c
+c	- ##### GDAL version (named itcvfol_g.cpp)
+c
+c	- Input parameters are now picked up from the command line, as in:
+
+c	  > "program" "input smoothed image" "input non forest bitmap" thresgen
+
+c	  > itcvfol_g   Roads_2FAV-Green.tif  Roads_NFor.tif  AUTO
+c	  > itcvfol_g   Roads_2FAV-Green.tif  Roads_NFor.tif  PRE 50,200,1
+c
+c	- Presently, a fixed output file name is used: "VFOL_BM.tif"
+c	  In order to have less parameters to put on the command line
+c 	  The user can always change the name immediatly after the run if needed (or in a script)
+c
+c	- Instead of a PCI file containning all, it is assumed that all will be in 
+c	  a single "project" directory: images as tif files, bitmap as 1-bit tif files, 
+c	  vector layers as shp files, etc., and, that ArcGIS will be used to view all these
+c
+c	-Does not do analysis by image sections anymore, but if not enough memory space for a full image 
+c	 try the "do it by lines" option, which will save a bit of memory (but, take more time).
+c
+c	  > itcvfol_g   Roads_2FAV-Green.tif  Roads_NFor.tif  AUTO BYLINES 
+c	  > itcvfol_g   Roads_2FAV-Green.tif  Roads_NFor.tif  PRE 50,200,1 BYLINES
+c	
+c	- "Bylines" does not work as expected, it does not save much memory, as GDAL is
+c	  wastefull with it internal buffers (does not clean-up or re-use its line buffer). 
+c	  Also, writing out by lines does not work (it appears to work, but write an empty image)
+c
+c	- Note to programmers: As the first program in the ITC-Suite, itcvfol is always messy as
+c	  I typical use it for all kinds of testing
+c
+c
+c
+c v7.1	 March 2020	François Gougeon
+c
+c	- Some cleanup and minor mods of GDAL version (now with GDAL v3.0.0)
+c
+c	- In the local environment, "set PROJ_LIB=D:\GDAL_3.0.0\projlib"  
+c	  to avoid tons of projection error messages
+c
+c
+c v8.0	April 2020	François Gougeon
+c	
+c	- Re-fixed to deal with 16bit images under GDAL by using, as before,
+c	PIX_FUN_PT get_pix_val = get_u8 OR get_16u
+c
+c	- Got "by lines" mode to work OK and save memory
+c
+c
+c v8.1  April 2021	François Gougeon
+c		
+c		- Made sure it is completely independent of PCI (for running & compiling)
+c		- Introduced a DEBUG mode for me activating "OK to continue" everywhere
+c		-
+c
+c		NOTE: This was one of my initial test program (for ITC & GDAL) and thus was 	
+c			created before the creation of "itc_io_g.cpp". So it is not using it. 
+c			In fact it was partially used to create it.
+c
+c
+c v8.2	Sept 2021	 	François Gougeon
+c
+c			- Mods for new ana_hist() passing return info about histogram analysis via structure.
+c
+c
+c v8.3	April 2023	François Gougeon
+c
+c			- Not to assume that all files are in the default directory from which the program is run
+c				Previously, everything was assumed in same directory and run from a cmd window from there.
+c				NOW, the path used with the main input file is used when creating the default output files
+c				This was necessary for ArcGIS Toolkit integration.
+c
+c
+c  v8.4	Nov. 2023	François Gougeon
+c
+c			- Some code clean-up 
+c
+c			- Introduced color table and description within output file
+c
+c
+c
+c v8.5	Nov. 2024	  François Gougeon 
+c
+c			- Allow user to specify an output file name (previously, was creating default name)
+c
+
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif auto
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif - auto  (prog, will create output filename)
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif - (AUTO assumed)
+c
+c		USAGE >   itcvfol_g PRF_NIR_Ave.pix 5,8 PRF_NIR_VFOL_v2.tif auto
+c				** PCI file still accepted, here Ch5 is main image and BM8 is non-forest bitmap
+c				using gdal numbering scheme (not PCI)
+c
+c
+********************************************************************************
+********************************************************************************
+
+
+	Program name: itcisol_g.cpp
+	François A. Gougeon
+	Oct 2018, April 2020, April 2021, Nov 2024 (v7.4a)
+
+
+********************
+
+	PROGRAM USAGE
+
+   	was:	IMPStatus("FILE,VFOLBIT,ISOLBIT,FORTYPE,REPORT;",
+
+	now:	itcisol_g   vfol_bitmap.tif isol_bitmap.tif forest_type
+
+
+	examples:	itcisol_g PRF_NIR_VFOL.tif PRF_NIR_ISOL_v2.tif MATURE
+
+			 itcisol_g PRF_NIR_VFOL.tif -  MAT (prog, will create output filename)
+
+		Here, the output file will typically be named "BaseName_ISOL.tif"  
+			(may be renamed if needed afterward)
+
+			itcisol_g PRF_NIR_VFOL.tif -  -  (Mature will be the default)
+
+
+********************
+
+	v7.0a	Oct 2018 François Gougeon	
+
+	- GDAL version (named itcisol_g.cpp)
+
+
+ 	v7.1	April 2021 François Gougeon
+
+	- Made completely independent of PCI (using calls yo itc_io_g.cpp)
+
+
+ François Gougeon	v7.2	April 2023
+
+			- Not to assume that all files are in the default directory from which the program is run
+				Previously, everything was assumed in same directory and run from a cmd window from there.
+				NOW, the path used with the main input file is used when creating the default output files
+				This was necessary for ArcGIS Toolkit integration.
+
+
+  François Gougeon  v7.3	Nov. 2023	
+
+			- Some code clean-up 
+
+			- Introduced color table and description within output file
+
+  François Gougeon  v7.4	Nov. 2024	
+
+			- Allow user to specify an output file name (previously, was only using default name)
+
+		USAGE >   itcisol_g PRF_NIR_VFOL.tif Output_Filename MATURE
+	
+		USAGE >   itcisol_g PRF_NIR_VFOL.tif - MATURE (prog, will create output filename)
+
+		USAGE >   itcisol_g PRF_NIR_VFOL.tif - - 		(MATURE assumed)
+
+
+
+
+
+
+********************************************************************************
+********************************************************************************
+
+	Program name: 	itcmg_g.cpp (for GDAL)
+
+	Author: 	François A. Gougeon
+	Date:		March-July 2020 (COVID-19 version)
+
+C+
+C	ITCMG.cpp    (ITC Mask Generator)
+c
+c 	ITC Mask Generator - Generates LIT/SHADED/TT masks
+C
+C	This is a program for the PCI EASI/PACE Image Analysis System that takes the
+C	bitmap generated by ITCISOL and the same illumination channel to generate a bitmap
+C	assumed representative of the lit side, shaded side, or top of tree crowns (i.e., MAX).  
+c	This bitmap may be used as "extra bitmap" mask (EXTBIT) in ITCSSG and ITCSC
+c	to create signatures and classify trees using only that "purer" part of the crown.
+c
+c	Optionally (for research purposes), the bitmap of automatically delineated 
+c	crowns (ISOLBIT) can be replaced by a vector layer of manually delineated crowns.
+C
+c**************************
+c
+c	PROGRAM USAGE EXAMPLE
+c
+c	Using PCI Variable Notation:
+c
+c	> itcmg_g   ILLUMCH  ISOLBIT  MASKTYPE
+c
+c
+c	> itcmg_g SECTEUR_CH5.tif SECTEUR_ISOL.tif LIT	(most typical)
+c
+c	Program will create "SECTEUR_MG.tif" that you can rename later
+c
+c	IF some input files are PCI files OR other multi-feature files
+c	an additional question will be asked about channel or bitmap 
+c	number to use (in GDAL, bitmap numbers are sequential # after last 
+c	channel number, if 5 channel, first bitmap is Ch6; and vector layers
+c	are independent, starting at 1)
+c	Please use "gdalinfo" and "ogrinfo" on files to find out numbering scheme)
+c
+c	Usage with manual trees and other notations:
+c
+c	> itcmg_g SECTEUR_CH5.tif SECTEUR_VEC2.shp LIT
+
+c	> itcmg_g SECTEUR.pix,5 SECTEUR_VEC2.shp LIT
+
+c	> itcmg_g SECTEUR.pix SECTEUR.pix LIT	
+	NOTE: 2nd file will ask which bitmap or vector layer to use
+c
+c	> itcmg_g SECTEUR.pix,5 SECTEUR.pix,2 LIT	
+	NOTE:	Will use CH5 and segment 2 (bitmap or vector, here vector)
+C-
+c******************************************************************************
+c
+c v7.0a	March 2020	François Gougeon
+c
+c	- Modified program for the GDAL environment and variables on command line
+c	from ITCMG.cpp v6.0 coded for the PCI environment
+c
+c	- Easely done for image and bitmap. More difficult for manual trees (polygons)
+c
+c	- Removed excess bagage (i.e., the purely PCI related stuff)
+c
+c	- ????Removed possibilties of working by image sections as most modern computers 
+c	  have lots of memory
+c
+c	- Toyed with the idea of using single very complete program to deal both 
+c	with PCI OR GDAL using conditional compiling
+c
+c
+c v7.1a	April 2020	François Gougeon
+c
+c	- Created generic input/output functions to be used by other GDAL program 
+c	in the ITC Suite, like image_in(), bitmap_in(), ... later moved to "itc_ic_g.cpp"
+c	as read_image(), read_bitmap(), write_bitmap(),... to be used by all Suite prog.
+c
+c	- Org. to work with 16 bit images
+
+c v7.2	July 2020	François Gougeon
+
+	- Org. to deal with a varietty of input parameter (variable) syntax
+	like:	SECTEUR.pix,5 rather then user Q/A
+
+********************************************************************************
+********************************************************************************
+
+
+	Program name: 	itcssg_g.cpp (for GDAL)
+	Author: 	Francois A. Gougeon
+	Date:		March 2020 - Nov. 2024
+
+**********************************
+
+c
+c François Gougeon	v7.0a	March-July 2020 (COVID-19 version)
+c
+c	- Modified program for the GDAL environment and variables on command line
+c	from ITCSSG.cpp v6.2 coded for the PCI environment
+c
+c	- Program has tons of inputs parameters and tons of variations thereof
+c	
+c
+c François Gougeon	v7.1	May 2021
+c
+c	- Modified program for complete independence from the PCI environment (no call to lib)
+c	- Given modern computer's capabilities, working by image sections has been removed
+c	- If ever needed, you may pick it up from the PCI version of the program, 
+c	but you need to modify that part for GDAL
+c	- Introduced more flexibity to specify input files, specially training area files
+c
+c
+c François Gougeon  v7.2	April 2023
+c
+c	- NOT to assume that all files are in the default directory from which the program is run ANYMORE
+c		Previously, everything was assumed in same directory and run from a cmd window from there.
+c		NOW, the *path used with the main input file* is used when creating the default output files
+c		This was necessary for ArcGIS Toolkit integration.
+c
+c
+c François Gougeon  v7.3	Nov. 2024  
+c
+c	- Introduced more path variables. 
+c	When running from ArcGISPro where training areas (shp) are specified as just a string, 
+c	(e.g. PRF_Vec.shp,6,-13) to be modified (i.e., PRF_Vec6.shp, PRF_Vec7.shp, ...)
+C	path is unknown if not typed in directly (i.e., no default path)
+C	Thus,default path is considered to be main file default path
+C	
+c	- Making text version of signatures more informative
+C				
+c			
+*************************
+c
+c	PROGRAM USAGE EXAMPLE
+c
+#### GDAL PROGRAM USAGE:
+
+> itcssg_g FILE DBIC ISOLBIT EXTBIT TRAINSEG SIGTYPE { BITBOUND TREETYPE SDBOUT} {CLASSCODE (for slayer mode) }
+
+> itcssg_g Secteur.pix 1,-4 7 8 10,-12 MEAN AUTO ITC 2.5
+
+> itcssg_g Secteur.pix 1,2 7 8 12 - - - 2.5
+
+
+*** NOTE*** In the case of PCI file, layer# are Gdal layer number (as per ogrinfo)  not PCI#
+
+
+With TIF files:
+
+> itcssg_g SECTEUR_IRGB.tif 1,-4 SECTEUR_ISOL.tif SECTEUR_MG.tif 2 MEAN AUTO ITC 3
+	where training areas 2 could be secteur_VEC2.shp  OR secteur_BM2.tif (it will try both)
+	However, it could lead to confusion unless always using one type (shp) or the other
+	as numbers (e.g., 2) may overlap
+
+Similarly:
+
+> itcssg_g SECTEUR_IRGB.tif 1,-4 SECTEUR_ISOL.tif SECTEUR_MG.tif 2,-7 MEAN AUTO ITC 3
+
+
+Other mode:
+
+> itcssg_g SECTEUR_IRGB.tif 1,-4 SECTEUR_ISOL.tif SECTEUR_MG.tif secteur_VEC.shp,2,-7 MEAN AUTO ITC 3
+
+	secteur_VEC2.shp, secteur_VEC3.shp, secteur_VEC4.shp, ... to VEC7 will be used  
+
+Alternative notation:
+
+> itcssg_g SECTEUR_IRGB.tif 1,-4 SECTEUR_ISOL.tif SECTEUR_MG.tif secteur_VEC.shp,2,3,5,6 MEAN AUTO ITC 3
+
+*******************
+
+Special SLAYER mode (Manual Trees in segm 2), LIT in BM 18, classes to use are 3 & 4 as per field TRAINF
+
+	> itcssg_g SECTEUR.pix 1,3 2 18 - MEAN - slayer 2.5 3,4    
+
+> itcssg_g SECTEUR.pix 1,-3 - - 2,-5 MEAN - manvec	// manual tree polygons, one species per vector layer
+
+> itcssg_g SECTEUR.tif 1,-3 10 11 12,-14 MEAN AUTO ITC 2.5  //  Uses Training Areas like SECTEUR_BM12.tif
+
+********************************************************************************
+********************************************************************************
+
+	Program name: 	itcsc_g.cpp (for GDAL)
+	Author: 	Francois A. Gougeon
+	Date:		July 2020 (COVID-19 version)
+
+*********************************
+c
+c François Gougeon	v8.0a	March-July 2020
+c
+c	- Modified program for the GDAL environment and for variables on the command line
+c	from ITCSC.cpp v7.3 coded for the PCI environment
+c
+c	- Program has tons of inputs parameters and tons of variations thereof
+c	
+c
+************************************
+
+c
+c	PROGRAM USAGE EXAMPLE
+c
+#### GDAL PROGRAM USAGE:
+
+In order to deal with simple numbers on command line, file nomenclature 
+is often predefined, but always using base file name, here "SECTEUR"
+
+>  itcsc_g FILE DBIC ISOLBIT EXTBIT SigSEG SIGTYPE TREETYPE
+
+>  itcsc_g SECTEUR.pix 1,-3 10 11 10,-12 MEAN ITC
+
+	Will pickup all info from the PCI file, but with GDAL channel ordering
+
+
+>  itcsc_g SECTEUR.tif 1,-3 10 11 12,-14 MEAN ITC
+
+>  itcsc_g SECTEUR.tif 1,-3 10 11 12,-14 MEAN ITC
+
+		Image channels 1,2,3 are in a tif file
+		
+		As per user input, ISOLBIT number to use: 10
+		ISOLBIT file_in  :  SECTEUR_BM10.tif
+
+		As per user, EXTBIT  number to use: 11
+		EXTMASK file_in  :  SECTEUR_BM11.tif
+		
+		Signature file_in  :  SECTEUR_SIG_BM12.sig 
+		Signature file_in  :  SECTEUR_SIG_BM13.sig		
+		Signature file_in  :  SECTEUR_SIG_BM14.sig	
+		
+	meaning that signature were generated by "itcssg_g" from training area bitmaps 12,13,14	
+
+	**NOTE: Program will also look for SECTEUR_SIG_VEC2.sig (when from polygon training areas)
+		Presently, SECTEUR_SIG_BM12.sig as priority over SECTEUR_SIG_VEC12.sig 
+		
+
+	
+You can also direct the search for signature files by giving a base file name :
+
+
+>  itcsc_g SECTEUR_IRGB.tif 1,-4 SECTEUR_ISOL.tif SECTEUR_MG.tif Secteur_SIG_VEC.sig,2,3 MEAN ITC
+
+
+
+		
+### The output from the classifier will be bitmaps (1-bit tifs) named:
+
+	SECTEUR_Class1.tif, SECTEUR_Class2.tif, SECTEUR_Class3.tif, ...
+	
+		
+To classify manual "individual tree polygons" all in a single vector layer in a PCI or a shp file
+
+>  itcsc_g SECTEUR.tif 1,-3 2 18 12,-14 MEAN SLAYER		// single layer is segm 2, LIT is BM 18
+
+>  itcsc_g SECTEUR.tif 1,-3 21 - 12,-14 MEAN SLAYER		// single layer SECTEUR_VEC21.shp, signature=12-14 noLIT
+
+
+********************************************************************************
+
+	Program name: 	itcca_g.cpp (for GDAL)
+	Author: 	Francois A. Gougeon
+	Date:		Sept. 2020 (COVID-19 version)
+	Improved:	Nov. 2024 (v5.3a)
+
+Description:
+
+
+C	ITCCA.cpp		Individual Tree Crown (ITC) Classification Accuracy
+C
+C	ITCCA determines the classification accuracy of an Individual Tree Crown
+C	Classification Process.  A confusion matrix is generated, based on the testing
+C	bitmaps that the user specifies and the bitmaps produced from ITCSC as a result of
+C	the classification.  The result is a table (matrix) showing both counts of trees
+C	and percentages, plus the average accuracy and the overall accuracy.  As well, the
+C	counts for unclassified trees is included (percentages and accuracy reflect the
+C	presence of the unclassified trees).  The Kappa Coefficient and Kappa Variance
+C	is calculated (not including the unclassified trees in the classifications), and 
+C	the average crown area of the correctly classified tree crowns is displayed.
+C
+C
+c
+c	PROGRAM USAGE
+c
+c
+c	> itcca_g BaseFilename ISOLBIT TESTSEG  CLASSBIT BITBOUND
+
+	where "basefilename" is typically the main tif file contaninng the image (but not used)
+	Here, it is just used to create the proper prefix for ISOLBIT, TESTSEG and CLASSBIT files
+	ISOLBIT is a bitmap of ITC delineated tree crowns, typically called BFname_ITC.tif
+	TESTSEG  can be bitmap or vector layer test areas (or a combination) 
+	(e.g., BFname_BM13.tif BFname_VEC2.shp)
+	CLASSBIT files are bitmaps resulting from an ITC classification with ITCCA_G
+	BITBOUND is as per PCI definition above. POINTS mode is not implemented yet.above 
+
+	> itcca_g SECTEUR_IRGB.tif 7  10,-12 16,-18 AUTO 
+		Will use SECTEUR_BM7.tif as ITC bitmap.
+		Will use SECTEUR_BM10.tif to BM12 *OR* VEC10 to Vec12 as testing areas
+		will use SECTEUR_Class16.tif to Class18 as bitmaps from classification
+
+	> itcca_g SECTEUR_IRGB.tif SECTEUR_ISOL.tif 12,-14 1,-3 
+
+	> itcca_g SECTEUR_IRGB.tif ITC 12,-14 1,-3 
+
+		Will use SECTEUR_ITC.tif as ITC bitmap.
+
+	> itcca_g SECTEUR_IRGB.tif ITC Secteur_VEC.shp,12,-14 1,-3 
+
+	Test areas are : Secteur_VEC12.shp Secteur_VEC13.shp Secteur_VEC14.shp
+
+	> itcca_g SECTEUR_IRGB.tif ISOL Secteur_VEC.shp,13,2 1,-2
+
+	Test areas are : Secteur_VEC13.shp and Secteur_VEC2.shp 
+
+	Class bitmaps are : Secteur_Class1.tif and Secteur_Class2.tif
+	
+
+	
+	 #### Both test areas and class filenames can be EXPLICIT(if different from our convention)
+	
+ 	> itcca_g PRF_ADS_19x9km.tif PRF_NIR_ISOL.tif PRF_nnnn.shp,6,-13 PRF_xxx.tif,1,-8
+
+ 	> itcca_g PRF_ADS_4x4km.tif PRF_NIR_ISOL.tif PRF_Vec7.shp,6,-13 PRF_ADS_Class.tif,1,-8
+
+	Here 7 is deleted (just there for the convenience of cut & paste) and 
+	PRF_Vec6.shp PRF_Vec10.shp PRF_Vec11.shp PRF_Vec12.shp PRF_Vec13.shp are used
+
+NOTE:	Range of style 6-13 (rather than 6,-13) are now acceptable
+
+********************************************************************************
+
+Program name: 	itcpcd_g.cpp
+
+Author: 	François A. Gougeon
+Date:		Aug - Oct 2024 (V8.0a)
+
+Description:
+
+c Description:
+c
+c	Individual Tree Crown Polygon Content Description 
+
+c
+C	ITCPCD ouputs statistics about classified ITCs within each polygon of a vector layer.
+c	Typically used with forest stand polygons (either from an existing forest inventory
+c	or freshly generated with the ITC suite or some texture measure or other means) to
+c	get information about their content as expressed by an ITC image analysis.
+c
+C	The following information is generated for each polygon:
+C
+C		o Polygon area
+C		o Number of crowns, total and for each class
+C		o Crown Closure percentage, total and for each class
+C		o Stems/Hectare, total and for each class
+C		o Class percentage of total stem density
+C		o Average ITC diameter, total and for each class
+c		o Average ITC height, total and for each class
+C
+c	The information is either stored as additional polygon attributes of POLYLAYR
+c	or can be written to a plain text file (PCDFILE).
+C
+
+C
+
+c
+c v8.0		Aug. - Oct 2024	François Gougeon		(*** GDAL version ***)
+c
+c			- From the PCI version, mod for GDAL, tif and shp files 
+c
+c			- First prog. to be ported to Linux Mint and g++ (during vacations)
+c
+c			- Major clean up of vect2rast_g() issue
+c
+c			- *NOW* creates an output shape file distinct from the input one
+c				Previous versions (on PCI) were modifying the original vector layer 
+c2				by just adding the newer fields to it		
+c
+c			- view_results() better separate moving to plain text file from moving to shp file 
+c				Uses Copy_Shape_File(), Prep_New_Fields() and Add_New_Info()
+c
+C1   NOTES:	
+c
+c			a) ITCPCD does not actually finds 2x2 pixels ITCs (the minimum) like other Suite 
+c			programs. It finds ITC that have at least 4 pixels.
+C			However, at this stage of the game everything should be clean (i.e., no debris)
+c
+c			b) PRESENTLY, in order to ALWAYS support reporting on TTs and ITCs in the same  
+c			classified image, MIN_TREE_PIXELS is set to 1 permanently.
+c			Thus, theoretically, even combination of ITCs and TTs within the same stand
+c			polygon can be reported on. HOWEVER, in such case the average crown area 
+c			or crown closure, ...  will be meaningless. However, NORMALLY, TTs and ITCS 
+c			are not found in the same stand.
+c
+c	
+c
+c	PROGRAM USAGE:
+c
+	 itcpcd_g BaseFilename ISOLBIT CLASSBIT POLYLAYR ODETAIL PROVINCE HEIGHTCH PCDFILE
+
+	EXAMPLE:
+
+> itcpcd_g PRF_CH6.tif PRF_ISOL_v3.tif 1,-8 PRF_For_Inv_2007.shp MEDIUMITC ONT PRF_DCM2012.tif PCD_Out_GDAL_v13.shp
+
+
+C	BaseFilename 	Base File Name (used only to create some default names like PRF_class1.tif)	
+C	ISOLBIT		Bitmap of ITCs (from ITCISOL)			
+C	CLASSBIT	Class Bitmaps (from ITCSC)	(1 -> PRF_class1.tif in example)		
+C	POLYLAYR	Input Vector Layer containing polygons  	
+c	ODETAILS	Output level of detail required			
+C	PROVINCE	Prov. jurisdiction of interest (affects CC%)	
+C	PCDFILE		Optional text file to get ITC info. by stand	
+c	HEIGHTCH	Optional height channel (i.e., a DCM)		
+C	REPORT		Report Mode: TERM/OFF/filename			
+C
+C
+
+
+c2	ODETAILS	Output level of detail required. 	
+c
+c	Can be one of HIGH/MEDIUM/LOW.
+c
+c	When asking for a printed output:
+c	LOW		Polygon area (pixels and hectare) and ITC counts
+c	MEDIUM	Same as HIGH
+c	HIGH	Reports on all of the species in the polygon (same order as bitmaps)
+c
+c	When adding attributes to vector:
+c	LOW		Polygon area (pixels and hectare) and ITC counts
+c	MEDIUM	Reports on the five most important species in the polygon (ordered by crown closure)
+c	HIGH	Reports on all of the species in the polygon (same order as bitmaps)
+c
+c 	To get more control over the species ordering when adding attributes to vector, 
+c	variations of the above parameters were introduced. They are:
+c
+c	HIGHSP		All of the species in the same order as that of the bitmaps.
+c	HIGHCC		All of the species ordered by crown closure.
+c	HIGHITC		All of the species ordered by ITC counts.
+c	MEDIUMCC	The five (5) main species as ordered by crown closure.
+c	MEDIUMITC	The five (5) main species as ordered by ITC counts.
+c
+c
+
+********************************************************************************
+
+Program name: 	lattops_g.cpp
+
+Author: 	François A. Gougeon
+Date:		July 2023, Nov. 2023
+
+Description:
+
+	Find treetops in dense areas and treetops with specific shadows in
+	more open areas, as designated by the directionality mask (DIRMASK).
+c
+C	This program moves a window of a given size on an input image and
+C	detects the local centered grey-level maximum of each window's instance.
+C	For the areas covered by an input mask (DIRMASK) (e.g.: directionality
+C	mask), it keeps only those max. with a significant low grey level area 
+C	(i.e., a shadow) in the direction commensurate with SUNANG (180o + SUNANG).
+c	(N.B.: The angle assumes North at top of the image)
+c
+c	Optionally: Operation under the directionality mask (open areas)
+c		    are done on a smoothed version of the image, if supplied
+c		    (i.e., if ILLUMCH = a,b). This may improve results.
+c	This could also be a completely different channel if more useful for shadows
+C
+c	Optionally: If DIRMASK = 1, trees from the whole image (except under NFMASK)
+c		    are considered to have discrete shadows (was SHADOW_TT) ????
+C
+c	Org. for full path and ArcGIS compatibility and output : basefilename_TTs.tif
+c
+c	*** NOTE *** Changed parameters order compared to PCI version (i.e., NFMASK before DIRMASK)
+c
+c	*** NOTE *** I Will not migrate TREETOPS to GDAL as LATTOPS can do it all
+c			
+c			
+c	- NOTE:	This program (and other of my GDAL progs) always complain when overwriting an exiting 
+c		output file. Most of the time it is not an issue. However, sometimes when ArcGIS has
+c		control of the file, it may not overwrite at all and leave you with previous results
+
+#### GDAL PROGRAM USAGE
+
+> lattops_g FILE,ILLUMCH NFMASK DIRMASK WINDSIZ THRSHADE SUNANG FORTYPE TTBITM
+
+
+
+#### GDAL PROGRAM EXAMPLES
+
+> lattops_g PRF_4x4km.tif,4 - - - 50 - -
+
+Here, the regular TREETOPS will be used throughout the image (CH4 ) using 
+a 3x3 window and a shade threshold of 50.
+
+
+> lattops_g PRF_4x4km.pix,4 PRF_NonFor.tif - - 50 - -
+
+Here, the regular TREETOPS will be used throughout the image (CH4 ) using 
+a 3x3 window and a shade threshold of 50. The non-forest areas (PRF_NonFor.tif)
+will not be touched.
+
+
+> lattops_g PRF_4x4km.pix,4 PRF_Forest.tif,-1 - - 50 - -
+
+Here, the regular TREETOPS will be used on CH4 under a FOREST MASK (PRF_Forest.tif) 
+(because of the "-1") using a 3x3 window and a shade threshold of 50.
+
+
+
+> lattops_g PP1493386_GDAL_Tests.tif 4 386_GDAL_BM9.tif - 5 50 - Mature 
+
+The fouth channel of PP1493386_GDAL_Tests.tif (or .pix) is used
+There is no directionality mask, thus regular TREETOP will be used throughout the image
+except, under the NFMASK (386_GDAL_BM9.tif)
+A 5x5 window will be used, with a shade threshold of 50.
+
+> lattops_g PP1493386_GDAL_Tests.pix,4 BM9.tif BM10.tif 5 50 160 MAT 
+
+The fouth channel of PP1493386_GDAL_Tests.tif (or .pix) is used
+Directionality mask is BM10.tif, thus SHADOW_TT will be used throughout the image
+under BM10, with a sun azimuth of 160 degrees, except, under the NFMASK (BM9.tif) 
+A 5x5 window will be used, with a shade threshold (THRSHADE) of 50.
+By default, shadow threshold (cause unsepcified) will be 1.3 * THRSHADE 
+It could have been specified as 65, as THRSHADE=50,65 for example.
+
+
+
+> lattops_g PP1493386_GDAL_Tests.tif,4,7 BM9.tif BM10.tif 5 50,60 160 MAT Test_TTs.tif
+> lattops_g PP1493386_GDAL_Tests.tif 4,7 BM9.tif BM10.tif 5 50,60 160 MAT Test_TTs.tif
+
+Here, a different channel (CH7) is used by the directionality analysis
+and a shadow thres of 60 will be used, and an output bitmap file name is given.
+
+
+
+********************************************************************************
+********************************************************************************
+
+
+	Program name: 	ave_filter.cpp (64bit)
+	Author: 	François A. Gougeon
+
+Description:
+
+	To produce a smoothed image useful (needed) for itcvfol_g of the ITC-Suite
+	(with PCI, FAV or my AFAV were often used)
+	
+
+********************************************************************************
+
+	PROGRAM USAGE
+
+Run as (for examples):
+
+> ave_filter_g in_file.tif  output_file.tif 3 		# typical use
+
+> ave_filter_g test9.pix,2  output_file.tif	3	# channel to use connected to filename
+
+> ave_filter_g test9.tif,2  - 3				# output file name will be created
+
+> ave_filter_g test9.pix 2   output_file.tif  5,3	# channel to use is a separate parameter (for ArcGIS GUI)
+
+	Above, does a 5x5, then a 3x3 smoothing on Ch2 of the pix file 
+
+For an existing output file, program will ask permission to overwrite file
+and/or permission to overwrite a specific channel if a pix file
+
+Deals with input/output of 16bit images 
+
+As input/output file, deals with .tif, .pci, and ENVI (.dat) files
+
+*******************************************************************************
+*******************************************************************************
+
+
+	Program name: 	itcafav_g.cpp
+	Author: 	François A. Gougeon
+	Date:		May 2021
+
+Description:
+
+	To smooth various image areas "more or less" depending on needs.
+
+	The process is guided by the small tree crown mask (STCMASK) and 
+	the non-forest mask (NFMASK). Typically, it smoothed the small tree
+	areas with a 3x3 average filter, and the big tree areas with a 5x5
+	filter on top of the 3x3 smoothing.
+	When finished, it writes the image to the output channel.
+
+	- Mod. of ave_filter.cpp to make it similar to AFAV, thus smooth different image sections differently
+	based on NFMASK (non-forested areas) and STMASK (small tree areas)
+	That is: non-forested areas are not smoothed, small tree areas are smoothed a bit, and the rest,
+	considered large tree areas are smoothed more (based on WINDSIZE)
+	NOTE: Big tree areas are inferred -> not non-forest areas and not small tree areas
+	
+#### PROGRAM USAGE
+
+> itcafav_g Main_File.ext,CH# NFMASK STCMASK WINDSIZ
+
+Run as (for examples):
+
+
+> itcafav_g Secteur_IRGB.tif Secteur_NF.tif Secteur_STC.tif 3,5		# channel 1 is implied
+
+> itcafav_g Secteur_IRGB.tif,2 Secteur_NF.tif Secteur_STC.tif 3,5	# use channel 2 in tif file
+
+Using base file name to create its name, output image will be a tif, 
+for example:  Secteur_AFAV2.tif						# channel no. is in file name
+	
+
+*******************************************************************************
+
+Program name: 	glinv_g.cpp 
+Author: 	Francois A. Gougeon
+
+Description:
+
+C
+C	Program to invert grey levels in images.
+c	Works with 8-bit or 16-bit images, but only 8 to 8, 16 to 16.
+C
+C
+C1	PARAMETERS
+C
+C	GLINV is controlled by the following global parameters:
+C
+C	Name		Prompt					Count	Type
+C
+C	FILE		Database File Name			64	Char
+C	DBIC		Input channel				1	Int	
+C	DBOC		Output channel 				1	Int
+c	NORMCRIT	Normalization criteria(Raw/Navg/Nmax)	64	Char
+C	REPORT		Reporting device			64	Char
+C
+
+c	NORMCRIT	Normalization criteria (Raw/Navg/Nmax)
+C
+c	NORMCRIT (normalization criteria) selects the type of normalization (or not)
+c	used in generating the output image (displacement of data range).
+c	Otherwise, grey levels would all end up in upper part of full range.
+c
+c		Raw	no normalization on channel data
+c			(i.e., gl 0-59 end up at 255-195, for an 8bit image)
+c		Navg	data normalized by the channel average grey level
+c		Nmax	data normalized by the channel maximum useful grey level
+
+
+
+Opening a "pix" (or other format) file, printing no of pixels and lines, geographic info, ...
+and read two specified channels (as third argument) and write a reversed image to 
+the output file (2nd argument), often a "tif" file OR a specific channel of an existing file.
+
+PROGRAM USAGE:
+
+Run as (for examples):
+
+>  glinv_g input_file output_file NORMCRIT	
+
+>
+
+c *****************************
+
+History:
+
+V1.1	Oct. 2023 	Francois Gougeon
+
+	- From very old glinv.cpp and ndvi_ima_g
+
+	- NOT to assume that all files are in the default directory from which the program is run 
+			
+	- Allow program to automatically create output file name base file name (using "-" or "#")
+			
+
+*******************************************************************************
+
+	Program name: 	ima_thr_g.cpp
+	Author: 	François A. Gougeon
+
+Description:
+
+	To threshold an input image channel(using a range), typically to produce a 
+	non-forest mask needed by itcvfol_g of the ITC-Suite  
+	(similar to IMTHRES circa 1995-2015)
+
+
+History:
+
+
+ v1.0a	June  2021	François Gougeon
+
+	- Quick modification of itc_afav_g.cpp
+	
+	- For people that dont have easy access to an image analysis system, 
+	there is a need for a thresholding program, mostly to create a non-forest mask.
+	For example, a simple threshold on te NIR band, or on a DCM, could create a
+	decent initial non-forest mask.
+	
+	- Like most of my ITC programs, it deals with 8-bit or 16-bit input images and
+	specific channel in multi-channel .pix or .tif input files
+	
+	- Using base file name to create its name, output image will be a 1-bit tif, 
+	for example:  Secteur_THR2.tif			# original channel no. is in file name
+
+
+ v1.1a	June  2021	François Gougeon
+
+	- Modification to add (i.e., OR) results to an existing bitmap in order to possibly do
+	a series of thresholds on different channels (and/or a Digital Canopy Model(DCM))
+					
+v1.5a	Nov. 2023	François Gougeon  
+
+	- Modification NOT to add (i.e., OR) results with an existing bitmap
+	was confusing on reruns (and we now have bmcombo_g to do that)
+
+	
+	
+	
+	
+#### PROGRAM USAGE
+
+> ima_thr_g   Main_File.ext,CH#   -  thres1,thres2			### will create an output filename
+
+> ima_thr_g   Main_File.tif   -  thres1,thres2  			### will use ch1
+
+> ima_thr_g   Main_File.ext,CH#   Secteur_NonFor.tif   thres1,thres2  	### will use given output file name
+
+
+
+Using base file name to create its name, output image will be a 1-bit tif, 
+for example:  Secteur_THR2.tif		# channel no. is in output file name
+
+
+
+
+*******************************************************************************
+*******************************************************************************
+
+
+	Program name: 	ndvi_ima.cpp (64bit)
+	Author: 	François A. Gougeon
+
+Description:
+
+
+	From two input channels assumed nIR and RED, this
+	program writes in an ouput channel an NDVI image
+	using the standard formula:
+
+			nIR - red
+			---------
+			nIR + red
+
+*** This is a GDAL version of ITC Suite's NDVI.cpp (for PCI environment)
+
+	Opening a "pix" (or other format) file, printing no of pixels and lines, geographic info, ...
+	and read two specified channels (as third argument) and write an NDVI image to 
+	the output file (2nd argument), often a "tif" file OR a specific channel of an existing file.
+
+
+****************************
+
+	PROGRAM USAGE
+
+	ndvi_ima input_ima_file output_ima_file {2 channels to use}
+
+Run as (for examples):
+
+G:\GDAL_Tests>	ndvi_ima SECTEUR_Sub.pix test_ndvi.tif 1,2
+
+G:\GDAL_Tests>    ndvi_ima test9.tif test_ndvi.tif 1,2
+
+G:\GDAL_Tests>    ndvi_ima Roads12_Sub.pix Roads12_Sub.pix 1,2 
+		(for an existing output file, the prog. will ask to overwrite the file 
+		or a specific channel)
+
+******************
+
+History:
+
+V1.1	Oct. 2016 	Francois Gougeon
+
+	- October 2016 (from NDVI.cpp for the PCI environment)
+
+	- June 2017 (cleaning up, improved, comments and re-tests)
+
+V1.2	Oct. 2018 	Francois Gougeon
+
+	- Mods. to be more versatile on output (new file, overwrite file (or not), 
+	overwrite channel of existing file (say a PCI file), ...
+
+	- As output file, deals with .tif, .pci, and ENVI (.dat) files
+
+V1.3 	March-April 2020 (COVID-19)	Francois Gougeon
+
+	- Minor mods. for GDAL 3.0.0 (was GDAL 2.1.1) and some cleaning up
+
+
+*******************************************************************************
+*******************************************************************************
+
+Program name: 	homogen_g.cpp
+Author: 	François A. Gougeon
+
+
+Description:
+c
+c	Produces an output image convaying the texture "homogeneity"
+c	of the input image based on a specific variable (HOMOVAR)
+c
+c	By default, it conveys a measure of the normalized variance (NVARS)
+c	for a pixel, as calculated within a window of IWS*IWS pixels
+c	around the pixel of interest, and summarize by bigger blocks
+c	IBS*IBS to produce a smoother image. 
+c
+c	Such an image can later be thresholded to separate regions 
+c	with different greylevels and/or textures.
+c
+C*******************************************8
+
+C1	PCI PARAMETERS
+C
+C	HOMOGEN is controlled by the following global parameters:
+C
+C	Name		Prompt					Count	Type
+C
+C	FILE		Database file name (for input/output)	64	Char
+C	DBIC		Input Illumination (B&W) Channel	1	Int
+c	HOMOVAR		Homogeneity basis (MEAN/VARI/...)	64	Char
+C	IWS		Size of moving window (e.g.,3,5,7)	1	Int
+c	IBS		Size of block to summarize info		1	Int
+C	DBOC		Channel for resulting variance image	1	Int
+C	REPORT		Reporting  device			64	Char
+C
+
+
+
+HOMOVAR 	Variable to use in judging homogeneity
+
+HOMOVAR="MEAN || VARI || NVAR || STDEV || COVAR || MIN || MAX
+
+MEAN:	Multispectral mean within the IWSxIWS area
+VARI:	Variance within the IWSxIWS area
+NVAR:	Normalized Variance within the IWSxIWS area
+STDEV:	Standard deviation within the IWSxIWS area
+COVAR:	Coeficient of Variation within the IWSxIWS area
+MIN:	Minimum within the IWSxIWS area
+MAX:	Maximum within the IWSxIWS area
+MIN10:	Below minimum+10% within the IBSxIBS area
+MAX10:	Above Maximum-10% within the IBSxIBS area
+
+
+**********************************
+
+History:
+
+
+ v1.1	Oct. 2021	François Gougeon
+
+	- Created from ave_filter_g.cpp and of course from HOMOGEN.cpp
+
+	
+ v1.2a		Oct. 2023  François Gougeon
+ 
+		- Major adaptation after two years and adaptation to run from my ArcGIS toolbox
+
+		- NOT to assume that all files are in the default directory from which the program is run ANYMORE
+		Previously, everything was assumed in same directory and run from a cmd window from there.
+		NOW, 
+		the **path used with the main input file** is used when creating default input/output file names
+		This was necessary for ArcGIS Toolkit integration.
+			
+		- Allow program to automatically create output file name from base file name (using "-" or "#")
+			
+		- Allow user to specify input channel, like Test_Illum.tif,2 from the cmd line OR
+				as a separate item, mostly for ArcGIS
+			
+			
+*******************************************	
+
+USAGE :
+
+	>  homogen_g input_ima output_ima HOMOVAR IWS,IBS
+
+
+Run as (for examples):
+
+	>  homogen_g Test_Illum.tif test_Var.tif NVAR 7,31	! channel one used  by default
+
+	>  homogen_g Test_Illum.tif - NVAR 7,31			! output file name will be created
+
+	>  homogen_g Test_Illum.tif,3 - NVAR 7,31		! OK to specify input channel
+
+	>  homogen_g Test_Illum.pix 2 - NVAR 7,31		! OK to specify input channel
+
+*******************************************************************************
+*******************************************************************************
+
+Program name: 	grad_dc_g.cpp  (CPP main prog that calls GRAD_DC2_g.f)
+
+Author: 	François A. Gougeon
+
+Description:
+
+
+c	Program that produces an output image related to the amount
+c	of gradient directionality found in small areas (blocks)
+c	of the input image in a direction commensurate with SUNANG
+c
+
+c 	Variables usedw hen call via  PCI/EASI
+
+c	FILE	Database File Name				1-64	Char
+c	DBIC	Database Input Channel				1	Int
+c	DBOC	Database Output Channel				1	Int
+c	IBS		Size of blocks used (IBS*IBS)			1	Int
+c	SUNANG	Angle of sun relative to the image		1	Int	
+c	REPORT	Specifies the file to append generated report 	1-64	Char
+c
+
+c	USAGE:    >  grad_dc_g input_ima.tif output_ima.tif IBS SUNANGLE
+c
+c	USAGE:    >  grad_dc_g input_ima.tif - 20 160
+c
+c	USAGE:    >  grad_dc_g input_ima.pix,1 output_ima.tif IBS SUNANGLE
+
+	Special mode:
+
+		grad_dc_g PP833596_NIR_FAV.tif PP833596_NIR_GradDir.tif  21 - IOPR
+
+		if(IOPR == 1) Creating a Gradient Magnitude Image (sun angle disregarded)
+		if(IOPR == 2) Creating a Gradient Direction Image (sun angle disregarded)
+		if(IOPR == 3) Assessing gradient directionality relative to sun angle (default mode)
+
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name:	mfpwbrdf_g.cpp 
+	Author:		Francois A. Gougeon
+	Date:		May-June 2022
+
+Description:
+
+c	Calculates and applies Multi-Feature Piece-Wise BRDF Correction Curves
+c	to image channels such that the resulting image channels have their
+c	spectral values less influenced by view and sun angles (and/or 
+c	additional color balancing done by the supplier of an image mosaic
+c	to render the image visually appealling to humans)
+
+Recent History:
+c
+c	François Gougeon  v5.0g	May-June-July 2022 		*** GDAL version ***
+c
+c	- Now CPP main prog (mfpwbrdf_g.cpp) calls "mfpwbrdf2_g.f" as a extern C subroutine
+c		and passes all parameters to it (by REFERENCE)
+c	- My CFUNCT_G.FTN is used to setup for call to C functions in GDAL lib
+c	- Lots of antique junk left in, but commented out
+c	- Leaned about "alignas()" to allign char variables to word boundaries 
+c	(lots of instabilities before that)
+c
+c	Because full image is loaded into memory, as opposed to readig lines one at the time
+c	(like PCI version), it's easy to do the rotation on the fly. Just use the ROT parameter
+c
+c	Present version deals with image max size of 60Kx60K
+c
+c	It's not multi-feature(MF) anymore, so just rerun for each channels and each control bitmap
+c
+c	The piece-wise aspect with POST to deal with a mosaic of multiple flight lines
+c	is not turned-on at this point in time
+c
+c
+c	PROGRAM USAGE: 		(at this point in time)
+c
+c---- with a PCI file
+c
+c 	mfpwbrdf_g imafile.pix,dbic,dbib,dboc  ... other param.
+c
+c	>  mfpwbrdf_g secteur_v3.pix,2,12,7 y a 50 ROT
+c
+----  with TIFF files
+
+	 mfpwbrdf_g imafile.tif,n bitmap.tif outfile.tif ... other param.
+
+	> mfpwbrdf_g Secteur_IRGB.tif,1 Secteur_MG.tif BRDF_Out.tif yes auto 50 ROT
+
+Here, other parameters are 
+
+	NADCEN	Is nadir centered? (yes/no)	
+	MODO	Mode of operation (AUTO/MANUAL)
+	NVAL	Normalization Value (to inforce)
+	ROT	Image rotation performed if ROT present
+
+NOTES:
+
+	-At this point in time, the program does not deal with :
+		multiple channels in one single run (use successive runs)
+		multiple correction curves (softwoods & hardwoods)(use successive runs)
+		multiple flight lines within a mosaic
+		
+	Similar to original program for PCI, the program operates on North-South images
+	while most flight lines are acquired East-West, so images need to be rotated
+
+	The original program went North-South to access the image "line-by-line"
+	to minimize memory usage and work on huge images, huge mosaic.
+
+	Now that the full image is loaded into memory, it's easy to do the rotation
+	on the fly. Use the ROT parameter
+
+	Remember, NADCEN="NO is for images that are slighly diagonal in their files
+
+
+
+***************************************************************************************
+***************************************************************************************
+
+Program name: 	thickbit_g.cpp
+
+Author: 	François A. Gougeon
+
+Description:
+
+	Thicken bits in a bitmap (e.g., from treetops)
+
+	This program thickens the bits of an input bitmap and saves the results
+	in an output bitmap (typically, to make them more visible) 
+	Can also produce a cross at the treetop location (Factor=100)
+	
+	This is typically done with a treetop (TT) bitmap for printing or 
+	image recording purposes for the thicken treetops to be more visible. 
+
+	It can also be used as a "dialation" program (i.e., morphological operator).
+	Also, this can be used to make TTs more like ITCs so that programs only meant 
+	to run on ITCs can be used with TTs (e.g., ITCPCD to get species composition
+	of forest stands after TTs have been classified into species).
+
+
+ v3.4	August  2023	François Gougeon	(thickbit_g.cpp)
+
+		- Migrated to the GDAL environment (cause very useful to see treetops)
+		- Made cmd line input parameters very flexible
+
+
+
+****************************
+
+	PROGRAM USAGE
+
+Run as (for examples):
+
+### > thickbit_g test9.pix,4   output_file.tif	EFACTOR 		# channel to use connected to filename
+
+### > thickbit_g test9.pix  4  output_file.tif	3 (OR 5 OR 100)		# channel to use as separate parameter for ArcGIS	
+
+### > thickbit_g PP1493386_GDAL_TTs.tif PP1493386_GDAL_Thick.tif  3 (OR 5 OR 100)   # 100 makes a cross at TT
+
+### > thickbit_g PP1493386_GDAL_TTs.tif # #			! default output bitmap to be created, default efactor=2
+
+
+
+********************************************************************************
+********************************************************************************
+
+Program name: 	bmcombo_g.cpp
+
+Author: 		François A. Gougeon
+
+Date:			Nov 2023
+
+Description:
+
+	Program to combine two bitmaps into a third one
+
+	- This program allows for the combination of two GDAL-related bitmaps (.tif, NBITS=1)
+	into a third one.
+	
+	- This is typically done to combine various previously created masks into a new one 
+	(eg, a non-forest mask from water, flats areas, rock outcrops, man-made features ...))
+	
+	- One of the two input masks (bitmaps) can be the same as the output mask 
+	  to allow for an iterative addition of items
+	  
+	- To inverse a bitmap (operand=NOT) just use the same input bitmap twice  
+		
+	> bmcombo_g PP833596_NonFor.tif PP833596_NonFor.tif PP833596_Forest.tif  NOT
+	
+	
+	François A. Gougeon, Ph.D.
+	Remote Sensing Research	
+	(©)Natural Resources Canada
+	Canadian Forest Service 
+	Pacific Forestry Centre
+	506 West Burnside Rd.
+	Victoria, British Columbia, 
+	Canada, V8Z 1M5	
+
+
+*****************************************
+
+
+v1.0a		Nov. 2023	François Gougeon	(thickbit_g.cpp)
+
+			- Created from thickbit_g.cpp who deals with input and output bitmaps
+
+
+Run as (for examples):
+
+	> bmcombo_g Bitmap1.tif Bitmap2.tif Out_Bitmap.tif Operand  	//Operand can be OR/AND/XOR/SUB
+
+	> bmcombo_g PP833596_NIR_THR1.tif PP833596_NIR_Homog_THR1.tif PP833596_NonFor.tif OR
+
+	> bmcombo_g PP833596_NIR_THR1.tif PP833596_NIR_Homog_THR1.tif PP833596_NonFor.tif -  // OR is the default
+		
+	> bmcombo_g PP833596_NIR_THR1.tif PP833596_NIR_Homog_THR1.tif - AND 		//Output name to be created
+
+
+********************************************************************************
+********************************************************************************
+
+Program name: 	itcsfil_g.cpp
+
+Author: 		François A. Gougeon
+
+Date:			Nov 2023
+
+Description:	Individual Tree Crown Size Filter (itcsfil_g.cpp)
+
+	From a bitmap showing individual tree crowns (ITCs)
+	(such as the one generated by program ITCISOL),
+	this program generates a bitmap containing only the crowns
+	within a certain range of crown sizes (using lower and upper 
+	thresholds (in pixels)), or a certain range of diameters 
+	(using lower and upper thresholds (in meters) of crown diameters).
+	It can also filter for crown "good shape" based on crown
+	excentricity (ratio of one diameter vs the other).
+
+	
+	
+	François A. Gougeon, Ph.D.
+	Remote Sensing Research	
+	(©)Natural Resources Canada
+	Canadian Forest Service 
+	Pacific Forestry Centre
+	506 West Burnside Rd.
+	Victoria, British Columbia, 
+	Canada, V8Z 1M5	
+
+
+********************************************
+	PCI Version PARAMETERS
+
+
+C	ITCSFIL is controlled by the following global parameters:
+C
+C	Name		Prompt					Count	Type
+C
+C	FILE		Database File Name			128	Char
+C	ISOLBIT		Bitmap of individual tree crown		1	Int	
+C	DBOB		Bitmap of crowns of certain sizes	1	Int
+C	AREATHR		Min & Max Area in Pixels to include     1-2	Int
+C	DIAMTHR		Min & Max Diameter in Metres to include	1-2	Real
+C	EXCENT		Max. excentricity to be tolerated	1	Real
+C	REPORT		Reporting device			128	Char
+C
+
+
+
+*****************************************
+
+
+v1.0a		Nov. 2023	François Gougeon	(itcsfil_g.cpp)
+
+			- Created from thickbit_g.cpp who deals with input and output bitmaps
+				and original PCI based ITCSFIL
+
+
+Run as (for examples):
+
+	> itcsfil_g xxxx_ISOL.tif  Out_Bitmap.tif AREATHR DIAMTHR EXCENT
+
+	> itcsfil_g xxxx_ISOL.tif  - 50,150 - 2.0
+
+
+*******************************************************************************
+*******************************************************************************
+*******************************************************************************
+*******************************************************************************
+
+
+	 ### GDAL-Related Utility Programs ###
+
+
+*******************************************************************************
+*******************************************************************************
+
+
+
+	Program name:	convert_ima.cpp
+	Author: 	François A. Gougeon
+	Date:		October 2016
+
+	Directly from "gdal_test.cpp", my first GDAL program
+
+	June 2017 (cleaning up, improved, comments and re-tests)
+
+
+Opening a "pix" (or other format) file, printing no of pixels and lines, geographic info, ...
+and copying specific channels (OR all channels) to the output file, often a "tif" file
+
+NOTE:	Bitmaps from a PCI file get converted to 8bit B&W images in the output 
+	file (even a PCI file), as GDAL does not deal with bitmaps directly.
+
+### NOTE: 	Maybe better to use  "convert_pix2dir.cpp" instead
+
+*** Run as:
+
+G:\GDAL_Tests>   convert_ima SECTEUR_Sub.pix test_v11.tif all
+
+G:\GDAL_Tests>    convert_ima test9.tif test_v11.tif 1,2
+
+
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name:	convert_pix2dir.cpp
+	Author:		Francois A. Gougeon
+	Date:		June 2017 - April 2020
+
+Description:
+
+Program to convert a PCI .pix file that contains images, bitmaps, vector layers, etc.
+into a bunch of files (idealy stored together as a directory) that are the equivalent
+dataset to be used by an ITC-Suite modified to be independent of PCI (by using GDAL)
+
+Raster image channels will be in separate tif files (one per channel, no compression), 
+bitmaps will be stored in 1-bit tif file (not compressed), vector layers in .shp files,
+ITC signatures in .sig files, etc...
+
+
+VERSUS ... the earlier program "convert_ima.cpp", where upon opening a "pix" file
+and copying specific channels (OR all channels) to an output file (often in a single "tif" file), 
+BITMAPs from the PCI file got converted to "8bit B&W images" in the output file
+
+
+
+*** Run as:
+
+
+G:\GDAL_Tests>   convert_pix2dir xxxxxxx.pix outputname All
+
+G:\GDAL_Tests>   convert_pix2dir xxxxxxx.pix outputbasename CHs BMs VECs
+
+G:\GDAL_Tests>   convert_pix2dir xxxxxxx.pix outputname 1,3
+
+G:\GDAL_Tests>   convert_pix2dir xxxxxxx.pix outputname 1,2,3   4,5
+
+G:\GDAL_Tests>   convert_pix2dir xxxxxxx.pix outputname 0  4,5
+
+G:\GDAL_Tests>   xxxxxxx.pix outputname 0  0 2
+
+
+*** NOTE:	For the momment, "convert_pix2dir" relies on the user to tell it
+		 which channels are 8bit raster images, which are bitmaps, ...
+		and bitmaps are numbered after image channels
+		(i.e., if 8 channels, first bitmap is numbered 9)
+
+####   In other words, for the moment, you can not use the PCI bitmap numbers 
+	you have to manually calculate which channel GDAL thinks its in
+
+	HINT:	Given a bitmap no. within a PCI file, substract other interwined segments
+		from the bitmap no. (dont forget georeferencing segment 1) and add the
+		number of image channels to it to find which channel GDAL thinks its in
+
+
+
+
+
+REVISION HISTORY
+
+
+François A. Gougeon	v1.1	June 2017 
+
+	- Creation from "convert_ima.cpp" and from "gdal_test.cpp", my first GDAL program
+
+François A. Gougeon	V1.2	April 2020
+
+	- Adding capability to deal with vector layers (previous version did only images and bitmaps)
+	inspired by GDAL tutorial and my work on itcmg_g.cpp
+
+	- Adding capabilty of gealing with 16 bit images
+
+	- More proofing of user entries
+
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name:	Gdal_test_vector.cpp
+	Author:		Francois A. Gougeon
+	Date:		October 2016, June 2017, Dec 2021, July 2024
+
+Description:
+
+	Program to test GDAL vector layer access and print some info to screen
+	AND 
+	possibly create a small output shp file (as a test) with a subset of the original polygon layer
+
+
+*** PROGRAM USAGE
+
+>   Gdal_Test_vector PCDF_RoadRegen_12mBuff_40cm.shp
+
+>   Gdal_Test_vector Roads_12_Sub.pix layer#
+
+>   Gdal_Test_vector temp2.shp 1 sub_set.shp
+
+>   Gdal_Test_vector Roads_12_Sub.pix layer# sub_set.shp
+
+
+*** NOTE*** In the case of PCI file, layer# is Gdal layer number (as per ogrinfo)  not PCI#
+
+
+
+*******************************************************************************
+*******************************************************************************
+*******************************************************************************
+*******************************************************************************
+
+	### Coarse Woody Debris Analysis Programs ###
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name: 	cwd_sfil_g.cpp (64bit)
+	Author: 	François A. Gougeon
+
+	CWD_SFIL_g.cpp	(Coarse Woody Debris Size Filter (with GDAL))
+	
+	A mod of ITCSFIL to pickup logs in a field (i.e., cut area) 
+	littered by coarse woody debris and stumps.
+
+	From a bitmap showing logs and other coarse woody debris (CWDBM)
+	(typically from using a threshold on a normalized blue band)
+	this program generates a bitmap containing only the logs
+	within a certain range of diameters (using lower and upper 
+	thresholds (in cm)), and/or a certain range of lengths 
+	(using lower and upper thresholds in metres).
+
+	The original bitmap is often obtained by simple thresholds of
+	possibly a normalized blue image (or NVEGMASK, NDVI)
+
+	NOTE:  Length should be LONGER THAN FIVE(5) width to be considered a log or a branch 
+
+
+
+************************
+
+*** Run as:
+
+>  CWD_SFIL_g  Name_CWD.tif Name_LOGs.tif Test_Areas.shp  10,100 1,100
+
+
+Name_CWD.tif 	Input CWD bitmap
+Name_LOGs.tif 	Output LOG bitmap
+Test_Areas.shp  Test areas for which to report (or Test_Areas.tif - a bitmap)
+
+DIAM_THR	Min & Max diameter (in cm) to include (Int)	10,100
+LENG_THR	Min & Max length (in metres) to include	(Real)	1,100
+
+
+1st Date:	v3.0	July-Sept 2017 (as GDAL program)
+
+NOTE:		### One of the cleanest example of that transition from PCI to GDAL
+
+
+************************
+
+c v3.0	June-Sept 2017	François Gougeon
+c
+c		- Mod. to use GDAL library rather than PCI library (thus named "cwd_sfil_g")
+c		- Nice simple test prog. for that transition to GDAL
+c		- Also, very useful: no need to loan a PCI dongle to Tony's group
+c		- Convenient to use of tif files (images and bitmap) cause we were converting
+c		  back and forth to/from tif to do the skeletonization via Fuji.
+c		- Nice test prog. cause it has images, bitmaps, and vector layers
+c		- paint_plot() replaced by code in SEG_VEC section for GDAL access to polygons
+c		- vect2rast() used pratically as is (only very minor mods), although it has been
+c		  modified to erase area (set_flag=0) which was found a safer way to deal
+c		  with multiple small island in main shape (i.e., burn-in outer polygon,
+c		  burn-out inner polygon)
+c
+c
+c v3.1	Feb. 2018	François Gougeon
+c
+c
+c		- Fixes minor bug relative to cleaning residual junk in output bitmap (1-bit tif)
+c		  Need to be more careful about images starting at zero in GDAL, while keeping 
+c		 image sometimes at (1,1) for PCI environment compatibility (generally when X,Y used)
+
+
+
+
+
+*******************************************************************************
+*******************************************************************************
+
+	Program name: 	log_ivol.cpp (64bit)
+	Author: 	François A. Gougeon
+
+
+********************
+
+*** Run as:
+
+>  LOG_IVOL_g	Name_LOGBM.tif Name_Skeleton.tif Test_Areas.shp  10,100 1,100
+
+Inputs: 
+
+Name_LOGBM.tif 	Input bitmap of logs (typically filtered from CWD by CWD_SFIL)
+Name_SKELBM.tif Input bitmap of the skeleton of these logs (from Fiji)
+Test_Areas.shp  Input Test areas for which to report (or Test_Areas.tif - a bitmap)
+
+DIAM_THR	Min & Max diameter (in cm) to include (Int)	10,100
+LENG_THR	Min & Max length (in metres) to include	(Real)	1,100
+
+Outputs:
+
+	- A plain text file (Logs_Volume.txt) with all individual logs used 
+	in volume assessment and their position, length, diameter, area, and volume;
+	a summary for each plot (shape); and an overall summary.
+
+	- An image (Logs_Used.tif (1bit)) showing the above with individual logs used
+	  shown by their skeleton
+	OR
+
+	- An image (Logs_Used.tif (8bit)) showing the above with individual logs
+	painted different colours (NOTE: not up to part yet)
+
+
+********************
+	v3.0	July-Sept 2017 (as GDAL program)
+
+	log_ivol_g.cpp	(Log Individual Volume)
+	
+	A mod of log_ivol (LOGSFIL) to pickup logs and multi-logs objects from one 
+	bitmap (typically the results of CWD filtering by CWD_SFIL) and their
+	skeletonization in another bitmap (from Fiji/skeleton analysis)
+	and discovers individual logs and report on their volume
+	(based on acceptable length and width, and equation V= (L*PI*diam**2)/4 )
+	Reports on individual logs used in a plain text file and also output
+	a tif image of their skeleton to help in visualization
+
+	This program typically generates a bitmap (& a list) containing only
+	the logs within a certain range of width (using lower and upper 
+	thresholds (in cm)), or a certain range of lengths 
+	(using lower and upper thresholds in meters).
+
+*******************************************************************************
+*******************************************************************************
+
+
+
