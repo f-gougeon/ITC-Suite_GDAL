@@ -1,4 +1,4 @@
-# ITC-Suite_Src - Repository of Source Programs
+# ITC-Suite_GDAL
 
 ## Description of the GDAL version of the ITC-Suite
 
@@ -6,7 +6,7 @@
 
 	Nov 2018, April 2020, July 2020, April-June 2021, June 2022, 
 	July 2023, Oct 2023, July 2024, Oct-Nov 2024, Jan-June 2025
-	Jan 2026
+	Jan-Feb 2026
 
 ### Introduction   
 	The ITC-Suite was first developed for the ARIES image analysis system in the 90's.
