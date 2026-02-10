@@ -65,8 +65,9 @@ For info on how to run the ITC-Suite, one should check the "ITC-Suite_Docs" dire
 
 For additional info on how to run the ITC-Suite, one should check the ITC-Suite Manual 
 from 2010 (meant for the PCI environment). 
-It is highly recommended to read the <B>first 12 pages</B> to get a good overview of the ITC-Suite.
-
+<P>
+It is highly recommended to read the <B>first 12 pages</B> to get a good overview of the ITC-Suite. </P>
+ 
 <P> Gougeon, F.A. 2010.
 <A HREF="https://ostrnrcan-dostrncan.canada.ca/handle/1845/247283">
 The ITC Suite Manual : A Semi-Automatic Individual Tree Crown (ITC) Approach to Forest Inventories. </A>
