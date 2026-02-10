@@ -67,9 +67,9 @@ For additional info on how to run the ITC-Suite, one should check the ITC-Suite 
 from 2010 (meant for the PCI environment). 
 It is highly recommended to read the <B>first 12 pages</B> to get a good overview of the ITC-Suite.
 
-Gougeon, F.A. 2010 
-The ITC Suite Manual : A Semi-Automatic Individual Tree Crown (ITC) Approach to Forest Inventories
+<P> Gougeon, F.A. 2010.
+<A HREF="https://ostrnrcan-dostrncan.canada.ca/handle/1845/247283">
+The ITC Suite Manual : A Semi-Automatic Individual Tree Crown (ITC) Approach to Forest Inventories. </A>
 Natural Resources Canada, Canadian Forest Service, Pacific Forestry Centre, 
-Victoria, B.C. Canada.  June 2010. 92  p. 
-
+Victoria, B.C. Canada.  June 2010. 92 &nbsp;p. </P>
 
