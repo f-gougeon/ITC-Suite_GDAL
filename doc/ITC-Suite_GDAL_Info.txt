@@ -7,8 +7,17 @@
 	François A. Gougeon (Ph.D.)
 
 	Nov 2018, April 2020, July 2020, April-June 2021, June 2022, 
-	July 2023, Oct 2023, July 2024, Oct-Nov 2024, Jan 2025
+	July 2023, Oct 2023, July 2024, Oct-Nov 2024, Jan 2025, June-Aug 2025
 
+	NOTES: 
+
+	This "ITC-Suite_GDAL_Info.txt" may be considered directed at people using 
+	the GDAL version of the ITC-Suite at a "cmd window" level.
+
+	A more convivial version of this is "ITC-Suite_GDAL.chm", which could be considered
+	as more directed to ArcGISPro users.
+
+	They should carry roughly the same information
 
 
 *******************************************************************************
@@ -58,8 +67,14 @@ Introduction:
 		but should be used as guides, not gospel.
 
 	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
-		Most of the time, it is not an issue. However, sometimes when ArcGIS has control 
+		Most of the time, it is not an issue. However, sometimes when PCI/ArcGIS has control 
 		of the file, it may not overwrite at all and leave you with previous results
+
+	NOTE:	Most of the output files produced will carry a description of their
+		immediate provenance. Use "gdalinfo" to see that OR to only see 
+		the description, use for example:
+		> gdalinfo  PP1493386_Lengths_BM.tif | grep -i Description	OR
+ 		> gdalinfo  PP1493386_Lengths_BM.tif | findstr Description
 
 *********************
 Ackowlegment to GDAL:
@@ -158,21 +173,35 @@ set PROJ_LIB=C:\GDAL_3.3.3\bin\proj7\share
 
 REM 	To run programs - For GDAL version 3.10.0 
 
-
 REM	Where the ITC-Suite is located
 
-set PATH=C:\ITC-Suite_GDAL_v310\exe;%PATH%
-
+set PATH=C:\ITC-Suite_GDAL_v3.10\exe;%PATH%
 
 REM   For the apps of GDAL (like gdalinfo)
 REM 	AND  	Where the GDAL DLL are located
 
-set path=C:\Program Files\GDAL;%PATH%
-
+set path=C:\GDAL_v3.10;%PATH%
 
 REM   For the projection info
 
-set PROJ_LIB=C:\Program Files\GDAL\projlib
+set PROJ_LIB=C:\GDAL_v3.10\projlib
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.11 
+
+REM	Where the ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.11\exe;%PATH%
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\GDAL_v3.11;%PATH%
+
+REM   For the projection info
+
+set PROJ_LIB=C:\GDAL_v3.11\projlib
 
 
 
@@ -191,7 +220,7 @@ NOTE: 	At this point in time, some of the examples given may not follow properly
 *******************************************************************************
 *******************************************************************************
 
-	To use with ArcGIS (Pro
+	To use with ArcGISPro
 
 *******************************************************************************
 *******************************************************************************
@@ -200,7 +229,7 @@ This document describe the "GDAL ITC-Suite programs" and their parameters as use
 from a "cmd window" (under the Windows operating system) or from a "terminal window"
 under a Linux operating system.
 
-However, they can be used from a convenient GUI under ArcGIS (from a ToolBox).
+However, they can be used from a convenient GUI under ArcGISPro (from a ToolBox).
 Here, we will give the examples for ArcGISPro and GDAL v3.10
 
 The "ITC-Suite-GDAL-v3-10.tbx" toolbox shows a list of the "main" ITC-Suite programs.
@@ -212,10 +241,16 @@ that should be in that toolbox.
 
 This will call a Python program (GDAL_V3_10_Setup.py) that will do the setups.
 You may need to modify that program (within Arc or as a text file) if the locations
-of the GDAL ITC-Suite or GDAL itself (and geo projections) are different on your PC.
+of the GDAL ITC-Suite or GDAL itself (and geo-projections) are different on your PC.
 
 
-N.B.: Some utility programs (below) are not listed in the ArcGIS toolbox.
+NOTES: 	Some utility programs are not available in the ArcGIS toolbox and thus,
+	only available from the "command prompt" window interface.
+
+	GDAL "perse" has a lot of interesting programs that also available:
+	gdalinfo, ogrinfo, gdal_translate, ...
+
+
 
 
 *******************************************************************************
@@ -248,9 +283,15 @@ c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif - (AU
 c		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_NonFor.tif PRF_NIR_VFOL_v2.tif  pre 50,200,1
 c
 c		USAGE >   itcvfol_g PRF_NIR_Ave.pix 5,8 PRF_NIR_VFOL_v2.tif auto
-c				** PCI file still accepted where Ch5 is main image and BM8 is non-forest bitmap
-c				using gdal numbering scheme (not PCI)
+
+c			** PCI file still accepted where Ch5 is main image and BM8 is non-forest bitmap
+c			using gdal numbering scheme (not PCI)
 c
+		USAGE >   itcvfol_g PRF_NIR_Ave.tif  PRF_Forest.tif,-1 PRF_VFOL.tif auto
+
+		Instead of a non-forest mask, a FOREST mask can be used by adding  ",-1" to the file name
+
+
 
 	NOTE:	On an image like PRF_ADS_30x11_NIR_2FAV.tif, 
 		which is 75,000P x 27,500L x 40cm/pixel, or about 2GB per channel
@@ -480,43 +521,536 @@ c	> itcmg_g SECTEUR.pix,5 SECTEUR.pix,2 LIT
 	NOTE:	Will use CH5 and segment 2 (bitmap or vector, here vector)
 C-
 c******************************************************************************
-c
-c v7.0a	March 2020	François Gougeon
-c
-c	- Modified program for the GDAL environment and variables on command line
-c	from ITCMG.cpp v6.0 coded for the PCI environment
-c
-c	- Easely done for image and bitmap. More difficult for manual trees (polygons)
-c
-c	- Removed excess bagage (i.e., the purely PCI related stuff)
-c
-c	- ????Removed possibilties of working by image sections as most modern computers 
-c	  have lots of memory
-c
-c	- Toyed with the idea of using single very complete program to deal both 
-c	with PCI OR GDAL using conditional compiling
-c
-c
-c v7.1a	April 2020	François Gougeon
-c
-c	- Created generic input/output functions to be used by other GDAL program 
-c	in the ITC Suite, like image_in(), bitmap_in(), ... later moved to "itc_ic_g.cpp"
-c	as read_image(), read_bitmap(), write_bitmap(),... to be used by all Suite prog.
-c
-c	- Org. to work with 16 bit images
 
-c v7.2	July 2020	François Gougeon
-
-	- Org. to deal with a varietty of input parameter (variable) syntax
-	like:	SECTEUR.pix,5 rather then user Q/A
-
-********************************************************************************
-********************************************************************************
 
 
 	Program name: 	itcssg_g.cpp (for GDAL)
 	Author: 	Francois A. Gougeon
 	Date:		March 2020 - Nov. 2024
+
+	ITCSSG generates ITC-based signatures for different species of trees.
+
+	For a set of channels, it typically uses an ITC bitmap generated by 
+	ITCVFOL&ITCISOL and a series of training bitmaps (TRAINSEG, areas for 
+	plantations and uniform stands, OR screen selected ITCs (using DCPE) 
+	for mixed forests) to generate ITC-based signatures for different 
+	species (class) of trees.
+
+	Based on masks formed by ~ANDing the ITC bitmap and training bitmaps,
+	regions of the image are scanned for tree crowns and a signature is
+	calculated for each "species" (class) based on the MSS data under the
+	crowns in that region of the image. Crowns spanning the boundary of a
+	training area are included/excluded based on the BITBOUND parameter.
+	Various signature types (MEAN/TCL/TCL2/TEXTUR/STRUCT) or combination
+	of signature types (MEAN+TEXTURE) are available. 
+
+	An optional EXTBIT mask can further specify which part of each tree crown  
+	(LIT/SHADE/TT) should be processed instead of the full crown.  
+
+	The signatures are written to the output segments specified by SIGNSEG. 
+	If SIGNSEG is empty than new signature segments are generated.
+ 
+	Optionnally, if a SDBOUT filename is specified, the signature of each ITC
+	and the species signature are also written to a text file (potentionnally,
+	for detailed analysis or plotting (e.g., SAS, Splus, Exel, ArcGIS, ...).
+
+	Species signatures can also be generated from manually delineated tree 
+	crowns (in bitmaps or vector layers) using the TREETYPE = ManBM or 
+	ManVec, respectively. In these modes, as in previous modes (ITC/TT),
+	a bitmap or a layer segment (TRAINSEG) is required for each signature 
+	to be generated and the number of signatures to be generated is governed
+	by the number of elements in TRAINSEG.
+
+	NOTE:	Manually delineated crowns in bitmap form shall not touch each
+		other (at least, not 4-connected). Manually delineated crowns 
+		in vector form do not have this limitation.
+
+	An other mode of operation also exist (SLayer) when all polygons manual tree
+	crowns are in a single vector layer (ISOLBIT) and a field (TRAINF) labels
+	the class that each tree belongs to. Since the field pointed to by TRAINF
+	can contain other information or refer to classes that are not of interest
+	for the current run of ITCSSG, the parameter CLASCODE is used to select
+	the classes of interest. The number of elements in CLASCODE will thus 
+	govern the number of signatures segments to be generated.
+
+	TRAINF, the field specifying the training class for the manuallly delineated
+	vector tree crown in single layer mode (SLayer) can be specified in advance.
+	For example,
+			TRAINF = "train_class
+			run ITCSSG
+	This facilitates automatic (unattended) runs via EASI scripts.
+	If TRAINF is left unspecified, the user will be prompted for a field name.
+
+
+
+		PARAMETERS
+		
+
+
+	ITCSSG is controlled by the following global parameters:
+
+	Name		Prompt								Count Type
+
+	FILE		PCI Database File Name				132	Char
+	DBIC		Database Input Channel List			8	Int
+	ISOLBIT		ITC Bitmap from ITCISOL				1	Int
+ 	TRAINSEG	Training Segments (BM/Vect)			16	Int
+	DBIW		Database Input Window				4	Int
+	SIGNSEG		Signature Output Segment List			16	Int
+	CLASCODE	Class code (used in SLayer mode)		16	Int
+	SIGTYPE		MEAN/TCL/TCL2/TEXTUR/STRUCT			64	Char
+	TREETYPE    ITC/TT/ManBM/ManVec/SLayer         	 		64  Char
+	EXTBIT		External Bitmap Mask				1	Int
+	BITBOUND	Boundary ITCs:INC/EXC/AUTO/CGRAV/POINTS		64	Char
+	SDBOUT		Signature Database Filename			132	Char
+	REPORT		Report Mode: TERM/OFF/filename			132	Char
+
+
+		FILE
+		
+
+	Specifies the name of the PCI file containing the input images
+	and bitmaps and/or vectors, and that will receive the output
+	species signatures.
+
+	EASI>FILE="filename"
+
+		DBIC
+		
+
+	Specifies the input database channel(s) holding the input MSS image.
+	A list of up to 8 channels may be specified.
+
+	EASI>DBIC=n,n,n...
+
+		ISOLBIT
+		
+
+	Typically specifies a bitmap of individual tree crowns (ITCs) 
+	produced by the ITCISOL program.
+
+	EASI>ISOLBIT=n
+
+	Based on masks formed by ANDing this ITC bitmap and training bitmaps,
+	regions of the image are scanned for tree crowns (min. 2x2 pixels)
+	and a signature is calculated for each "species" (class) based on 
+	the MSS data under the crowns in that region of the image. 
+	If ITCs are to be used in TRAINSEG (rather than training areas), the
+	ITCs should preferably have been generated by using DCPE, 
+	and thus be exactly the same as the equivalent crown in ISOLBIT.
+
+	If as specified by (TREETYPE=ManBM or ManVec) and in the TRAINSEG,
+	manually delineated tree crowns (bitmaps or vectors, respectively)
+	are to be used as prototypes for each species, the ISOLBIT is 
+	disregarded.
+
+	In single input layer mode (TREETYPE=SLayer), ISOLBIT is used to
+	specify the layer of training manually delineated tree crowns from
+	which to generate the signatures. CLASCODE specifies with signatures
+	will actually be generated.
+		
+
+	PHILOSOPHIE
+	The program of the ITC suite were primarily designed for the semi-
+	automatic analysis of forested image using the ITCVFOL & ITCISOL
+	automatically delineated tree crowns, thus, the ITC bitmap (ISOLBIT)
+	tends to be a dominant factor of every program. This is also generally
+	true for ITCSSG, except in ManBM, ManVec, and SLayer special modes.
+
+
+		TRAINSEG	Training Segments (bitmaps or vectors)
+		
+
+	Specifies a list of Training Segments (bitmap or vector layers) to be used,
+	one for each species (class) signature to be created.
+
+	EASI>TRAINSEG=n,n,n...
+  
+	These bitmaps may contain filled training AREAS (for uniform forest 
+	stands) OR the full crown of individual trees (for mixed stands).
+	These ITCs should preferably have been generated by using DCPE, 
+	and thus be EXACTLY the same as the equivalent crown in ISOLBIT.
+	These training areas (each in turn) will be ANDed together bitwise with
+	the ISOLBIT to produce the mask which will be used to gather the MSS data
+	(if at least a minimum 2x2 pixel area exist for a tree crown)
+
+ 	Pointers to ITCs to be used (e.g., an external DB of ground tree positions)
+	can be used with BITBOUND in POINTS mode and EXTBIT bitmap containnig 
+	pointers to the tree crown to consider. In that case, training areas
+	(or full crowns) are still needed to indicate species.
+
+	In ManVec mode, the training segments are vector layers made of individual
+	tree crowns (close polygons - PCI shapes), typically delineated manually
+	on the screen by an interpreter.
+	The ISOLBIT and the BITBOUND parameter are disregarded.
+	This is more a research mode to see if purer signatures are generated by
+	human interpretation.
+	
+
+		DBIW	Input window
+		
+
+
+	Specifies the image (bitmap) window to be read from the input channels (bitmaps). 
+
+  	EASI>DBIW=Xoffset,Yoffset,Xsize,Ysize
+
+  	EASI>DBIW=                     defaults to entire image
+
+
+
+		SIGNSEG
+		
+
+	Specifies a list of segments to which the generated signatures 
+	will be output.  If a full segment list is not specified, or if a
+	segment is not valid, a new segment will be created at the end of
+	the PCI file to contain the information.
+
+       Note that the segment type number for ITC signatures is now 140 
+	(140 = standard PCI TEX type segment) and will now show under
+	Imageworks PCI file browser.
+
+	EASI>SIGNSEG=n,n,n...
+
+
+		CLASCODE	Optional class codes
+		
+
+	This parameter allows the user to enter a specific class
+	code (e.g., 183) for each class to be considered when in
+	single layer mode (TREETYPE=SLayer). In this mode, ISOLBIT 
+	points to a single vector layer containning numerous manual
+	tree crowns (vector polygons), some of which will be used
+	to generate the species signatures. In this mode, the number 
+	of classes specified by CLASCODE will generally govern the
+	number of signatures that will be generated.
+
+	EASI>CLASCODE=n
+
+
+		SIGTYPE
+		
+
+	Specifies which type of signature is to be generated.
+  	Possible types include:  MEAN/TCL/TCL2/TEXTUR/STRUCT.
+
+	EASI>SIGTYPE="type"
+
+	Signature Description
+
+	MEAN:	Multispectral mean of each ITC are averaged to create
+			species signature. MEAN can be used with EXTBIT to create
+			LIT side MEAN and TT (tree top) MEAN signatures.
+	TCL:	First eigen vector & corresponding intercept of each ITC
+			are averaged to create the species signature.
+	TCL2:	First eigen vector & corresponding intercept & eigenvalues
+			are averaged to create species signature.
+	TEXTUR:	Multispectral variance of pixels within each ITC (or LIT side))
+			are averaged to create a simple species textural signature.
+	STRUCT:	3D moments (now Kurtosis) of each ITC (i.e., shape)
+			are averaged to create species structural signature.
+
+	Version 2.0 introduced these all new redefined SIGTYPEs to ITCSSG.
+	The user can select more than one SIGTYPE, for exemple (m=3), 
+	SIGTYPE = MEAN,TEXTUR,STRUCT or SIGTYPE = MEAN+TEXTUR+STRUCT
+	A covariance of appropriate size (mn*mn), describing the covariance
+	of each feature selected will be created and added to the vectors.
+	If the user wants other signatures, than ITCSSG is run again to  
+	create other segments. (Here, n is number of channels).
+
+
+		     TREETYPE        Tree Type:  ITC | TT | ManBM | ManVec | Slayer
+		
+
+	Specifies whether species signature generation is to be done
+	based on a full automatic crown per tree (type = ITC) or only 
+	one pixel per automatic tree crown (type = TT), the so called
+	"tree tops" type of ITCMG (local maximum *within* an ITC).
+	The default is ITC. TT can only be used with SIGTYPE=MEAN.
+
+	EASI>TREETYPE="type"
+
+	ManBM -> The training bitmaps are made of individual tree crowns
+		 that were (typically) delineated manually on the screen 
+		 by an interpreter. 
+		 The ISOLBIT and the BITBOUND parameter are disregarded. 
+		 This is more a research mode to see if purer signatures are
+		 generated by human interpretation.
+
+	ManVec -> The training segments are made of individual tree crowns
+		  that were (typically) delineated manually on the screen 
+		  by an interpreter, but the manually delineated tree crowns
+		  exist in vector form as close polygons (PCI shapes) in a vector
+		  layer. The different species prototype crowns are stored in 
+		  different PCI vector layer segments (as opposed to bitmaps).
+		  (i.e., one vector layer per species)
+		  The ISOLBIT and the BITBOUND parameter are disregarded. 
+		  This is more a research mode to see if purer signatures are
+		  generated by human interpretation.
+
+	SLayer -> Permits the generation of multiple signatures from
+		  manually delineated tree crown (vector polygons) by specifying
+		  a single input layer in ISOLBIT (similarly to ITCSC) and a field
+		  of that layer (TRAINF) that identifies the class code of each
+		  tree crown species. The parameter CLASCODE selects which classes
+		  are of interest for a given run of ITCSSG and thus, how many
+		  signatures will be generated. 
+
+
+		     EXTBIT		Extra Bitmap
+		
+
+       Specifies a segment which contains an Extra Bitmap Mask.  This is an
+       additional bitmap which is used to mask which parts of the ISOLBIT should
+       be used to generate the signature.  Generally this is a bitmap from the
+       ITCMG program.  For example, say a bitmap is generated by ITCMG of type LIT,
+       and specified as EXTBIT.  The bitmap contains all the pixels that form the
+       lit side of the tree.  When the tree is being processed, only those pixels
+       that are in the LIT mask are used in the processing of the individual tree
+       signature (also used with TT or SHADE, or any other crown sub-area bitmap)
+
+	In the BITBOUND=POINTS mode, the EXTBIT bitmap points to the tree crowns that
+	should be considered.
+
+	EASI>EXTBIT=n
+	
+		     BITBOUND
+		
+
+       Possible values: INC / EXC  /AUTO / CGRAV / POINTS
+	(Inclusive or Exclusive or Automatic or Center_of_gravity or Pointers).
+
+	EASI>BITBOUND="value"
+
+       Specifies whether tree crowns that fall on the boundary of Training (testing)
+	areas (TRAINSEG) should be included (INC) or excluded (EXC), or have their
+	insertion decided upon automatically (AUTO) based on having 50% of their crown 
+	area inside the area, or based on their "center of gravity" (stem?) being 
+	inside (CGRAV) the training (testing) area.
+	POINTS is a separate case in which the EXTBIT bitmap contains pointers
+	to the tree crown to consider.
+
+       Inclusive:
+                   o	All crowns that have at least 2x2 pixels (and 10% of their crown)
+			inside the training (testing) area are included in the output.
+
+       Exclusive:
+                   o	Crowns that are only partially in the training (testing) area
+			(trees on area boundaries) are disgarded (generally).
+                   o	Exception: If a tree less than 10% of its crown area
+			sticking out of the testing area, it is considered IN.
+
+	Automatic
+                  o	Crowns are included in the output if more than 50% their crown
+		    	area is inside the training (testing) area.
+
+	CGRAV
+                  o	Crowns are included in the output if their center of gravity
+			(tree stem?) is inside the training (testing) area.
+
+	POINTS
+                  o	Crowns are included in the output if their is a pointers
+			(a set pixel) in EXTBIT that points to the crown.
+		   o	If this is the case, the full crown content is used
+			independent of the size of the pointer.
+
+	NOTE:	Not applicable with manual tree crowns (ManBM and ManVec).
+
+
+		SDBOUT
+		
+
+	Specifies the name of an optional Signature DataBase OUTput file. 
+
+	If a filename is specified, the signature information for "each ITC" 
+	and the species signatures will be written to a "plain text" file,
+	making possible more detailed analyses later (SAS, Splus, Exel).
+
+	EASI>SDBOUT="filename
+
+		REPORT
+		
+
+	Specifies the file to append generated report to:
+
+	EASI> REPORT = "filename"
+
+	Note:  The following names have special meaning:
+
+	EASI> REPORT = "TERM"	| generates reports on your terminal
+	EASI> REPORT = "DISK"	| generates reports on file "IMPRPT.LST"
+	EASI> REPORT = "OFF"	| (may) switch off report generation
+
+
+		DETAILS
+		
+
+	ITCSSG
+
+	**** NOT up-to-date relative to manual tree crowns (ManBM and ManVec modes).
+
+       ITCSSG generates class signatures for different species of trees,
+       specified by a set of channels to an input image, a bitmap from the ITCISOL
+       program, and a series of training bitmaps.  Based on a bitmap mask formed
+       by ANDing the ITCISOL and training bitmaps, a region of the image is
+       scanned for trees, and a signature for the "species" is determined
+       based on the data in the image.  An optional EXTBIT mask further species
+       which part of each tree should be processed.  These sigatures are then written
+       to a segment in the image file.  If a SDBOUT filename is specified, the
+       signature information is written to a text file.
+
+
+		GENERAL PROCESS
+		
+
+	Here is the general process followed by the program to generate species signatures:
+
+
+	**** NOT up-to-date relative to manual tree crowns (ManBM and ManVec modes).
+
+	The channels of the image are loaded in from the specified image file.  As well, three
+	different kinds of bitmap masks are loaded in.  A bitmap mask from ITCISOL (Individual
+	Tree Crown Isolation) is loaded, as well as a set of Training Masks.  The training
+	masks may contain filled areas, discrete points, or filled tree crowns.  The third
+	(optional) bitmap mask which may be loaded is the External Bitmap (EXTBIT).  This is
+	a bitmap, usually generated by the ITCMG program which specified which parts
+	of the ITCISOL bitmap should be processed in order to generate the tree signatures.
+	The ITCISOL and TRAINSEG masks (each training mask and the ITCISOL mask) are ANDed
+	together bitwise to form a third bitmap mask, which is the one that is used to
+	determine tree positions.
+
+	**** NOT up-to-date relative to BITBOUND
+
+	The new mask is scanned until a tree is found.  The value of BITBOUND is considered
+	here.  If INC is specified, all partial trees are considered, while EXC causes partial
+	trees to be rejected.  With an "accepted" tree, the signature generator then begins
+	building up the tree signature by gathering the multi-spectral information of the tree.
+	For each tree a "tree node" structure is allocated.
+
+	Basically, a tree node holds information (size, position, image values, etc.) for
+	each tree and is used in the generation of signature information.  Each pixel in the
+	tree is then processed, with the appropriate data from the image being stored in a
+	tree node.  The External Bitmap Mask is used here to determine which information is
+	kept.  If no EXTBIT is specified, then the information from all pixels contained in
+	the tree are used.  If an EXTBIT value is used, only pixels that are also in the
+	EXTBIT are kept for that tree.  This allows parts of the tree (for example the lit side)
+	to be used, while part of it is rejected.  From the pixel (multi-spectral information)
+	a mean and variance vector for the intensity values is generated and stored in the
+	tree node.
+
+	As well, an information list is created for a tree.  For each pixel in the tree, an
+	information node is created which contains the actual image data (the intensity values
+	of the channels) in a form more useable by the program.  All the information nodes
+	together for the tree form the information list.  When an information list has been
+	generated, it is processed and a correlation and covariance matrix is generated.
+	Again, this information is stored in the tree node.
+
+	When all the trees have been processed, the tree list is traversed and the signature
+	information for each tree is gathered.  This information is summed and then averaged
+	so that the species signature (or average tree signature) is generated.
+
+	The results of the species signature are stored in another node called a result node.
+	The values contained in the result node are then displayed and the signatures saved.
+
+	From the covariance matrix the eigenvalues and eigenvectors are generated and also
+	stored in the result node.  Once all the result nodes have been generated (one per
+	species) the information is written to a PCIDSK segment (one segment per species).
+	If the user has specified a segment then it is overwritten, otherwise a new segment
+	is created.
+
+	If a SDBOUT filename is specified then the species signature information is written
+	to a text file.
+
+
+		CLASS SIGNATURES
+		
+
+	The following information is generated for each tree in the training bitmap
+	and then averaged to create the average or class (species) signatures:
+
+       o The mean multispectral vector of all pixels contained in a tree crown.
+	o The multispectral variance vector of all pixels contained in the tree crown.
+	o The covariance matrix of the distribution of pixels in multispectral space
+	  for each tree crown.
+	o The correlation matrix of the pixels in each tree crown.
+	o The eigenvalues and eigenvectors of the covariance matrix.
+
+	The species signature may then be used to classify by the following signature
+	types in ITCSC:
+
+	Mean vector (AVG)
+	The mean multispectral vector of all pixels contained in a tree crown.
+
+	Mean vector & first principal component (MPC1)
+       The "Tree Colour Line" approach in multiple dimensions - the distribution
+       of pixels for each tree crown is represented by its first eigenvector
+       (its colour line direction) and its mean vector (to anchor the line in
+       multidimensional space).
+
+       Mean vector & first principal component & eigenvalues (MPC1EV)
+       As above (MPC1) but eigenvalues are added to describe the spread of the
+       distribution in the various directions.
+
+       Mean and covariance matrix (MCOV)
+       The mean and covariance matrix of the distribution of pixels in
+       multispectral space for each tree crown.
+
+
+
+		     BITMAP MASKS AND BOUNDARIES
+		
+
+	**** NOT up-to-date relative to BITBOUND or EXTBIT
+
+	Three different types of bitmap masks are used by ITCSSG.  The first kind is
+	a bitmap mask generated by ITCISOL and specified by ISOLBIT.  This bitmap
+	contains a mask of the isolated tree crowns.  This bitmap is scanned in order
+	to locate a tree to be processed.
+
+       The second kind of bitmap is a series of training bitmaps (TRAINSEG) which have
+	been constructed by the user.  This can consist of a filled region (all trees
+	contained in a region), filled tree crowns (an individual tree), or individual
+	points (also indicating individual trees to be considered).  Each bitmap
+	contains trees of one particular species.  The signatures of trees in each bitmap
+	are used to create the average or species signature.  Each TRAINSEG in turn is
+	ANDed together bitwise with the ISOLBIT.  This new bitmap is scanned to
+	find the location of a tree.
+
+       When the new bitmap is scanned the BITBOUND value is considered.  Possible values
+       for BITBOUND include INC or EXC.  If INC is specified this indicates an "inclusive"
+       border on the TRAINSEGs.  That is trees which are partially in a region (but not
+       entirely) are included in the signature generation process.  If EXC is specified,
+       partial trees are rejected from the species signature generation.  Generally, the
+       following should be considered:
+
+	The third type of bitmap is an External Bitmap mask specified by EXTBIT.  The
+	External Bitmap Mask is used here to determine which information in a tree crown is
+       kept.  If no EXTBIT is specified, then the information from all pixels contained in
+       the tree are used.  If an EXTBIT value is used, only pixels that are also in the
+       EXTBIT are kept for that tree.  This allows parts of the tree (for example the lit side)
+       to be used, while part of it is rejected.
+
+
+		     OUTPUT DATABASE STRUCTURE
+		
+
+       If a DBOUT filename is specified, then the species signature information is
+       written to a text file.  The database will have the following structure for each
+       entry (species signature):
+
+	number trees-processed
+       multi-spectral channel mean values
+       multi-spectral channel variance values
+       eigenvectors and eigenvalues
+       covariance matrix
+
+       where:
+       'number' is the assigned species number
+	'trees-processed' is the number of trees used in generating the species signature
+
+       The other lines in the database refer to the signature data values.
+
 
 **********************************
 
@@ -716,7 +1250,7 @@ c	> itcca_g BaseFilename ISOLBIT TESTSEG  CLASSBIT BITBOUND
 	ISOLBIT is a bitmap of ITC delineated tree crowns, typically called BFname_ITC.tif
 	TESTSEG  can be bitmap or vector layer test areas (or a combination) 
 	(e.g., BFname_BM13.tif BFname_VEC2.shp)
-	CLASSBIT files are bitmaps resulting from an ITC classification with ITCCA_G
+	CLASSBIT files are bitmaps resulting from an ITC classification with ITCSC
 	BITBOUND is as per PCI definition above. POINTS mode is not implemented yet.above 
 
 	> itcca_g SECTEUR_IRGB.tif 7  10,-12 16,-18 AUTO 
@@ -756,9 +1290,11 @@ NOTE:	Range of style 6-13 (rather than 6,-13) are now acceptable
 ********************************************************************************
 
 Program name: 	itcpcd_g.cpp
+		From itcpcd.cpp (for PCI env.)
 
 Author: 	François A. Gougeon
 Date:		Aug - Oct 2024 (V8.0a)
+Date:		Jan. 2026 (V8.3)
 
 Description:
 
@@ -789,7 +1325,7 @@ C
 C
 
 c
-c v8.0		Aug. - Oct 2024	François Gougeon		(*** GDAL version ***)
+c v8.0		Aug. - Oct 2024	François Gougeon		(*** First GDAL version ***)
 c
 c			- From the PCI version, mod for GDAL, tif and shp files 
 c
@@ -803,6 +1339,21 @@ c2				by just adding the newer fields to it
 c
 c			- view_results() better separate moving to plain text file from moving to shp file 
 c				Uses Copy_Shape_File(), Prep_New_Fields() and Add_New_Info()
+c	
+c   v8.2	Dec. 2025 - Jan 2026 François Gougeon
+c
+c       	- To deal with situations when there are no classes. We just want generic ITC/TT info. 
+c			Then, "-" can be used as third argument instead of a file name.
+c
+c		- No need to specify an output shape file. If using the minimum of 4 parameters,
+c		the default will be "Area_PCD_Out.shp". 
+c		To get the default text file "Area_PCD_Out.txt", parameter eight(8)  must be "X"
+c		In any cases, parameter eight(8) can always be used to declare what one wants
+c		as the file extension will be used to decide
+c
+c  v8.3		Jan 2026	François Gougeon
+c
+c		- Fixed a few bugs and tidy-up
 c
 C1   NOTES:	
 c
@@ -823,9 +1374,16 @@ c	PROGRAM USAGE:
 c
 	 itcpcd_g BaseFilename ISOLBIT CLASSBIT POLYLAYR ODETAIL PROVINCE HEIGHTCH PCDFILE
 
-	EXAMPLE:
+EXAMPLES:
 
-> itcpcd_g PRF_CH6.tif PRF_ISOL_v3.tif 1,-8 PRF_For_Inv_2007.shp MEDIUMITC ONT PRF_DCM2012.tif PCD_Out_GDAL_v13.shp
+> itcpcd_g PRF_CH6.tif PRF_ISOL.tif 1,-8 PRF_For_Inv_2007.shp MEDIUMITC ONT PRF_DCM2012.tif PCD_Out_GDAL_v13.shp
+
+> itcpcd_g PRF_4x4km.tif PRF_ISOL.tif PRF_Class1.tif,1-8 PRF_For_4x4km.shp MEDIUMCC # PRF_DCM.tif PCD_Out.txt
+
+> itcpcd_g PRF_4x4km.tif PRF_ISOL.tif - PRF_For_4x4km.shp - - PRF_DCM.tif PCD_Out.shp
+
+
+
 
 
 C	BaseFilename 	Base File Name (used only to create some default names like PRF_class1.tif)	
@@ -912,24 +1470,17 @@ c		control of the file, it may not overwrite at all and leave you with previous 
 
 #### GDAL PROGRAM EXAMPLES
 
-> lattops_g PRF_4x4km.tif,4 - - - 50 - -
+> lattops_g PP1493386_GDAL_Tests.pix,4 - - - 50 - -
 
 Here, the regular TREETOPS will be used throughout the image (CH4 ) using 
 a 3x3 window and a shade threshold of 50.
 
 
-> lattops_g PRF_4x4km.pix,4 PRF_NonFor.tif - - 50 - -
+> lattops_g PP1493386_GDAL_Tests.pix,4 386_GDAL_BM9.tif - - 50 - -
 
 Here, the regular TREETOPS will be used throughout the image (CH4 ) using 
-a 3x3 window and a shade threshold of 50. The non-forest areas (PRF_NonFor.tif)
+a 3x3 window and a shade threshold of 50. The non-forest areas (386_GDAL_BM9.tif)
 will not be touched.
-
-
-> lattops_g PRF_4x4km.pix,4 PRF_Forest.tif,-1 - - 50 - -
-
-Here, the regular TREETOPS will be used on CH4 under a FOREST MASK (PRF_Forest.tif) 
-(because of the "-1") using a 3x3 window and a shade threshold of 50.
-
 
 
 > lattops_g PP1493386_GDAL_Tests.tif 4 386_GDAL_BM9.tif - 5 50 - Mature 
@@ -1071,9 +1622,6 @@ c		Nmax	data normalized by the channel maximum useful grey level
 
 
 
-Opening a "pix" (or other format) file, printing no of pixels and lines, geographic info, ...
-and read two specified channels (as third argument) and write a reversed image to 
-the output file (2nd argument), often a "tif" file OR a specific channel of an existing file.
 
 PROGRAM USAGE:
 
@@ -1603,6 +2151,177 @@ Run as (for examples):
 	> itcsfil_g xxxx_ISOL.tif  Out_Bitmap.tif AREATHR DIAMTHR EXCENT
 
 	> itcsfil_g xxxx_ISOL.tif  - 50,150 - 2.0
+
+********************************************************************************
+********************************************************************************
+
+Program name: 	cclosure_g.cpp 
+Author: 	Francois A. Gougeon
+Date:		June 2025 (1st version May 1995)
+Version:	3.2
+
+
+Description:
+
+C	From a bitmap showing individual (distinct) tree crowns
+C	such as the one generated by program ITCISOL (or from other
+c	bitmaps such as canopy from a simple threshold on NIR or NDVI)
+C	this program generates a raster image where each pixel value
+C	is relative to percentage canopy closure in a given neighbourhood.
+C
+C1	PARAMETERS
+C
+C	CCLOSURE is controlled by the following global parameters:
+C
+C	Name		Prompt						Count	Type
+C
+C	FILE		Database File Name				64	Char
+C	DBIB		Bitmap of tree crowns (or other BM)		1	Int	
+C	DBOC		Output Channel (canopy closure image)		1	Int
+c	NFMASK		Non-forested Area Input Bitmap (a mask)		1	Int
+C	REPORT		Reporting device				64	Char
+C
+C
+  
+  
+PROGRAM USAGE:
+
+Run as (for examples):
+
+>  cclosure_g  input_BM_file output_Ima_file NFMASK	
+
+>  cclosure_g PRF_ISOL.tif PRF_CCLOSURE.tif PRF_NonFor.tif
+
+
+
+
+
+********************************************************************************
+********************************************************************************
+
+
+Program name: 	stemdens_g.cpp 
+Author: 	Francois A. Gougeon
+Date:		June 2025 (1st version May 1995)
+Version:	3.2
+
+C+
+C	STEMDENS.cpp
+C
+C	From a bitmap showing individual (distinct) tree crowns,
+C	such as the one generated by program ITCISOL (TYPE=ITC),
+C	OR, for one showing only one pixel per tree, such as produced
+C	by programs such as TREETOPS or LATTOPS (TYPE=TT),
+C	this program generates a raster image where each pixel value
+C	is relative to the number of stem/hectare in its neighbourhood.
+c
+C
+C1	PARAMETERS
+C
+C
+C	STEMDENS is controlled by the following global parameters:
+C
+C	Name		Prompt						Count	Type
+C
+C	FILE		Database File Name				64	Char
+C	DBIB		Bitmap of tree crowns(from ITCISOL?)		1	Int	
+C	DBOC		Output Channel (stem/ha data)			1	Int
+C	TREETYPE    	Tree Type:  TT/ITC                      	64  Char
+c	NFMASK		Non-forested Area Input Bitmap (a mask)		1	Int
+C	REPORT		Reporting device				64	Char
+C
+C
+
+  
+PROGRAM USAGE:
+
+Run as (for examples):
+
+>  stemdens_g  input_BM_file output_Ima_file NFMASK ITC|TT 	
+
+>  stemdens_g PRF_ISOL.tif PRF_CCLOSURE.tif  PRF_NonFor.tif ITC
+
+*******************************************************************************
+*******************************************************************************
+
+
+SHAD_LEN - To find length of tree shadows in sparsely treed areas
+
+
+Program name: 	shad_len_g.cpp
+Author: 	François A. Gougeon
+Date:		July 2025 (GDAL version)
+Version:	1.8
+
+
+Description :
+
+This is directed at the sparse forested areas in northern Canada (e.g. NWT, Yukon)
+where individual trees and their rather specific shadows are often visible.
+
+From a bitmap showing tree shadows (often acquired by simple thresholding),
+this program generates a bitmap containing some shadow length as detected within
+a certain range of lengths, using lower and upper thresholds (LENG_THR in metres)
+and certain range of widths (BLOB_WID in cm).
+
+Using the above parameters, one can hopefully bypass irrelevant blobs or blobs that
+are a combination of multiple shadows in the X or Y directions
+
+It is able to report for the full image or for a certain Test Area (maybe a tif bitmap).
+
+** MORE IMPORTANTLY **, it is able to report the average shadow length within the 
+polygons (stands) of the test area (if TESTSEG is such)
+
+
+Parameters :
+
+SHAD_LEN is controlled by the following parameters:
+
+SHAD_BM		BM-In of crude tree shadows			
+SHAD_LEN	BM-Out of measured shadow lengths	
+TESTSEG		Test Area Segments (BM/Vect)		
+LENG_THR	Min & Max length (in metres) to include	
+BLOB_WID	Min & Max blob width (in cm) to include	
+SUNANG		Sun azimuth and elevation		
+
+Program Usage :
+
+> shad_len_g SHAD_BM SHAD_LEN TESTSEG LENG_THR(m) BLOB_WID(cm) SUNANG
+	  
+> shad_len_g Input_BM.tif Out_Bitmap.tif - 2,15 50,400 - 		// does FULL image (SUNANG at 180,45)
+
+> shad_len_g PP784481_Shadows.tif PP784481_Length.tif Test_Area.tif  - - - -
+
+> shad_len_g PP784481_Shadows.tif PP784481_Length.tif PP784481_Segm26.shp  - - - -
+
+
+Notes :
+
+The original shadow bitmap, if obtained by simple thresholding, should try to avoid
+water bodies and large shaded areas (e.g., darken mountain sides).
+
+The intent here, is to infer tree heights from shadow lengths. With a sun elevation of
+about 45 degrees in Canada's Northern areas, shadow lengths could correspond to 
+tree heights.
+
+Info about shadow lengths in a given area (a stand) could provide info about 
+whether we are dealing with mature trees or regeneration or severely stunted trees.
+This could direct the use of MATURE vs REGEN flag in program like LATTOPS.
+
+Given the image acquisition location, date, and time, you can get the sun'azimuth 
+and elevation from the NOAA Apps (or other) at :
+
+https://gml.noaa.gov/grad/solcalc/azel.html
+
+This is required to get proper tree heights from their specific shadows.
+
+If not known (i.e., no image acquisition info), sun azimuth can be measured on
+the image looking at shadows (with a reporter or guessing) and 45 degree elevation
+can be used (typical of such northern latitude) 
+
+Importantly, sun azimuth is used by SHAD_LEN to look for shadows in the proper direction,
+thus maximizing the chances of getting the end point (corresponding the tree tree top)
+
 
 
 *******************************************************************************
