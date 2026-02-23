@@ -2,20 +2,35 @@
 
 *****************************************************
 
-REM 	To run programs - For GDAL version 3.10.0  (on Ciara and other PCs)
+REM 	To run ITC-Suite programs from a "cmd window" 
+REM	Grab these three lines and paste them into your "cmd window"
+REM	(Here for GDAL version 3.10.0)
 
+REM   To get access to GDAL apps (like gdalinfo)
+REM 	AND  to point to where the GDAL DLL are located
 
-REM   For the apps of GDAL (like gdalinfo)
-REM 	AND  	Where the GDAL DLL are located
-
-set path=C:\gdal_v3.10;%PATH%
-
+	set path=C:\gdal_v3.10;%PATH%
 
 REM   For the projection info is located
 
-set PROJ_LIB=C:\gdal_v3.10\projlib
+	set PROJ_LIB=C:\gdal_v3.10\projlib
+
+REM Where the GDAL ITC-Suite is located
+
+	set PATH=C:\ITC-Suite_GDAL_v3.10\exe;%PATH%
 
 
-REM	  Where the GDAL ITC-Suite is located
+NOTES: 	These are my recommended locations for GDAL and the ITC-Suite
+	Your situation may differ, so adapt the above three lines accordingly
 
-set PATH=C:\ITC-Suite_GDAL_v3.10\exe;%PATH%
+*****************************************************
+
+To run ITC-Suite programs from the ArcGIS Pro environment:
+(Here for GDAL version 3.10.0)
+
+One needs to load the appropriate ToolBox (e.g., ITC-Suite_GDAL-v3-10.atbx)
+AND first run  "GDAL_V3_10_Setup" before anything else.
+
+This will mimic the above three lines for the ArcGIS environment.
+
+ 
