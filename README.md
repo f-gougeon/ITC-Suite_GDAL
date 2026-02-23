@@ -59,6 +59,31 @@ Open Source Geospatial Foundation,
 
 Thanks Frank (Warmerdam)
 
+### Running GDAL version of the ITC-Suite
+
+#### From command prompt window
+To run the ITC-Suite from a Windows10/11 "cmd prompt window", see **ITC-Suite_GDALv3.10_Run.txt**.
+Copy and paste the three(3) SET lines into your window. 
+**Note:** They may need modifiations if the GDAL or ITC-Suite locations are different on your computer.
+
+#### From ArcGIS Pro
+
+To run ITC-Suite programs from the ArcGIS Pro environment (Here for GDAL version 3.10.0) :
+
+One needs to load the appropriate ToolBox (e.g., ITC-Suite_GDAL-v3-10.atbx)
+AND first run  "GDAL_V3_10_Setup" before anything else.
+
+This will mimic the above three lines for the ArcGIS environment.
+
+#### For LinuxLinux
+
+To run the ITC-Suite from a Linux "bash shell" check: **Linux_GDAL_ITC-Suite_Compile_v3.txt**
+It also has the setup for compiling programs.
+
+**Note:** 	This is very exploratory at this point in time.
+			However,  programs run under Linux/Mint that I have used via Oracle Virtual Box 
+
+
 ### Additional Info 
 
 For info on how to run the ITC-Suite, one should check the "ITC-Suite_Docs" directory above.
