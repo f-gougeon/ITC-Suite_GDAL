@@ -1,0 +1,21 @@
+
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.10.0  (on Ciara and other PCs)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.10;%PATH%
+
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.10\projlib
+
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.10\exe;%PATH%
