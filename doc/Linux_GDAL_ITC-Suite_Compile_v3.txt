@@ -1,0 +1,355 @@
+
+REM         Linux_GDAL_ITC-Suite_Compile_v3.txt
+REM         July 2025,  ...
+
+REM         Sept. 2025 (see past multiple asterix lines)
+REM         Bottom has stuff that is  working properly 
+
+REM ****************************************************
+
+REM  Installing GDAL and setup to compile
+
+    1  sudo apt-get install build-essential libgdal-dev
+    2  sudo apt install gdal-bin
+    3	export CPLUS_INCLUDE_PATH=/usr/include/gdal
+
+REM Check version number
+
+	gdalinfo --version
+
+	ogrinfo --version
+
+REM		Al done from the source directory
+
+cd /home/fgougeon/ITC-Suite_GDAL_Src_2025
+
+PS1='Compile > '
+
+
+
+REM ****************************************************
+REM ****************************************************
+
+REM     Compile only programs
+
+g++ -c bitops.cpp `gdal-config --cflags` `gdal-config --libs`  
+
+g++ -c itc_io_g.cpp `gdal-config --cflags` `gdal-config --libs`  
+
+REM *********************
+
+REM    VARIOUS TESTS
+
+
+
+g++  -c `gdal-config --cflags` `gdal-config --libs` bitops.cpp
+
+
+g++  -c -fpermissive `gdal-config --cflags` `gdal-config --libs` itc_io_g.cpp 
+
+
+
+g++  `gdal-config --cflags` `gdal-config --libs`  itcpcd_g.cpp bitops.o itc_io_g.o
+
+
+
+
+g++ -I/usr/include/gdal -L/usr/lib -lgdal itcpcd_g.cpp bitops.o itc_io_g.o
+
+
+
+g++ -I/usr/include/gdal -L/usr/lib/gdal itcpcd_g.cpp bitops.o itc_io_g.o -o itcpcd_g 
+
+
+REM *********************
+
+REM    TEST PROGRAM  ***  WORKS ***
+
+g++ main.cpp `pkg-config --cflags --libs gdal` -o my_program 
+
+REM    Test program *** NOGO ***
+
+g++ main.cpp `gdal-config --cflags --libs gdal` -o my_program
+
+
+
+REM    TEST PROGRAM  ***  WORKS ***
+
+g++ -o gdal_version gdal_version.cpp `pkg-config --cflags --libs gdal`
+
+Run as ./gdal_version
+
+
+REM _______________________________
+
+g++ `pkg-config --cflags --libs gdal` itcpcd_g.cpp bitops.o itc_io_g.o -o itcpcd_g 
+
+
+g++ `gdal-config --cflags --libs gdal` itcpcd_g.cpp bitops.o itc_io_g.o -o itcpcd_g 
+
+
+g++  -o itcpcd_g  `gdal-config --cflags --libs gdal` itcpcd_g.cpp bitops.o itc_io_g.o
+
+
+
+
+g++ -I/usr/include/gdal  `gdal-config --cflags --libs gdal` itcpcd_g.cpp bitops.o itc_io_g.o -o itcpcd_g 
+
+
+g++ `pkg-config --cflags --libs gdal` -L/usr/lib/x86_64-linux-gnu/libgdal itcpcd_g.cpp bitops.o itc_io_g.o -o itcpcd_g 
+
+
+g++ `pkg-config --cflags --libs gdal` itcpcd_g.cpp bitops.o itc_io_g.o    -o itcpcd_g 
+
+
+REM ****************************************************
+REM ****************************************************
+REM ****************************************************
+REM ****************************************************
+REM *** This WORKS ***** (Param order very important - see failure above)
+REM ****************************************************
+
+REM     Compile only utility functions
+
+g++ -c bitops.cpp `gdal-config --cflags` `gdal-config --libs`  
+  OR
+g++ -c bitops.cpp `gdal-config --cflags  --libs`
+ 
+
+g++ -c itc_io_g.cpp `gdal-config --cflags` `gdal-config --libs` -w -fpermissive
+  OR
+g++ -c itc_io_g.cpp `gdal-config --cflags  --libs` -w -fpermissive
+
+
+g++ -c hist_g.c `gdal-config --cflags  --libs` -w -fpermissive
+
+
+g++ -c error.c `gdal-config --cflags  --libs` -w -fpermissive
+
+REM ****************************************************
+
+REM *** HELPING TRICK   
+REM ***** Using "&>  temp.lst" with head when too many errors filling the screen
+
+REM ****************************************************
+
+g++ itcpcd_g.cpp  itc_io_g.o bitops.o `gdal-config --cflags --libs` -w -fpermissive -o itcpcd_g  &>  temp.lst | head -10 temp.lst
+
+
+
+REM ****************************************************
+REM      Utility  programs
+REM ****************************************************
+
+
+g++ gdal_test_vector.cpp `pkg-config --cflags --libs gdal`-w -fpermissive -o gdal_test_vector
+
+
+
+REM ****************************************************
+REM      Main programs
+REM ****************************************************
+
+REM     Some programs DONT USE  "itc_io_g.o" AND linking with them created confusion (i.e., ERRORS)
+REM *** NOGO g++ ave_filter_g.cpp  bitops.o  `gdal-config --cflags --libs` -w -fpermissive -o ave_filter_g
+REM     Similary, some programs dont need to include ITC-Suite_GDAL_IO.h
+
+
+g++ ave_filter_g.cpp   `pkg-config --cflags --libs gdal`   -w -fpermissive -o ave_filter_g
+
+g++ itcafav_g.cpp bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcafav_g  
+
+g++ bmcombo_g.cpp  bitops.o itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o bmcombo_g
+
+g++ ima_thr_g.cpp bitops.o itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o ima_thr_g 
+
+g++ lattops_g.cpp bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o lattops_g 
+
+g++ glinv_g.cpp bitops.o  hist_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o glinv_g  
+
+g++ ndvi_ima_g.cpp bitops.o `pkg-config --cflags --libs gdal` -w -fpermissive -o ndvi_ima_g 
+
+
+g++ homogen_g.cpp bitops.o `pkg-config --cflags --libs gdal` -w -fpermissive -o homogen_g  
+
+
+g++ bmcolor_g.cpp  bitops.o itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o bmcolor_g
+
+
+REM ****************************************************
+
+
+	*** FORTRAN NEEDED for grad_dc_g mfpwbrdf_g imthres_g
+
+NOTE: imthres_g is a test prog for Fortran compiling. In the Suite, it was replaced by ima_thr_g.cpp
+
+
+REM 	with Linux built-in "gfortran"
+
+
+REM     tons of issues with Linux built-in "gfortran" (with CFUNCT_G.FTN)  OK with -ffixed-line-length-none  
+
+		gfortran -c imthres2_g.f -fdec -ffixed-line-length-none  
+
+
+REM gfortran -c imthres2_g.f -fdec -ffixed-line-length-none -fargument-alias 
+
+REM gfortran -c imthres2_g.f -fdec -ffixed-line-length-none  -I /usr/include/gdal  -L /usr/lib/x86_64-linux-gnu/libgdal.so
+
+
+
+g++ imthres_g.cpp imthres2_g.o bitops.o  itc_io_g.o -o imthres_g \
+`pkg-config --cflags --libs gdal` -w -fpermissive  -lgfortran -fargument-alias \
+-fno-underscoring
+
+ 
+
+
+
+
+
+REM 		Trying with Intel FORTRAN
+
+REM ifort  /4L132 /c imthres2_g.f   *** WAS "ifort" (as used on W11): New Intel FORTRAN is called "ifx"
+
+
+
+REM Needs "extend-source" for long lines and "fixed" to deal with "C comment"
+REM Disregard DLLIMPORT warning. Linux import directly from .so library
+
+ifx  -c imthres2_g.f -fixed -extend-source
+
+
+
+g++ imthres_g.cpp imthres2_g.o bitops.o  itc_io_g.o -o imthres_g \
+`pkg-config --cflags --libs gdal` -w -fpermissive 
+
+
+
+
+
+
+
+
+
+
+
+REM 	*********************
+
+REM 		Others
+
+
+gfortran -c grad_dc2_g.f  -fdec -ffixed-line-length-none
+
+gfortran -c mfpwbrdf2_g.f  -fdec -ffixed-line-length-none
+
+
+g++ grad_dc_g.cpp grad_dc2_g.o bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o grad_dc_g 
+
+g++ mfpwbrdf_g.cpp mfpwbrdf2_g.o bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o mfpwbrdf_g 
+
+
+
+REM ****************************************************
+
+
+REM    REMEMBER Some OLDER programs DONT USE  "itc_io_g.o" (prog. self-sufficient)
+REM     AND linking with "itc_io_g.o" creates confusion
+
+g++ -c vfolrules.c `gdal-config --cflags  --libs` -w -fpermissive
+
+g++ itcvfol_g.cpp vfolrules.o bitops.o hist_g.o  error.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcvfol_g
+
+
+g++ -c isolrules.c `gdal-config --cflags  --libs` -w -fpermissive
+
+REM    g++ itcisol_g.cpp  isolrules.o bitops.o itc_io_g.o error.o `gdal-config --cflags  --libs` -w -fpermissive -o itcisol_g
+
+
+g++ itcisol_g.cpp  isolrules.o bitops.o  error.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcisol_g
+
+
+
+g++ itcmg_g.cpp bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcmg_g 
+
+
+
+g++ -c eigens.c `gdal-config --cflags  --libs` -w -fpermissive
+
+g++ itcssg_g.cpp bitops.o  itc_io_g.o eigens.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcssg_g
+
+
+
+g++ itcsc_g.cpp bitops.o  itc_io_g.o eigens.o `pkg-config --cflags --libs gdal` -w -fpermissive -o itcsc_g
+
+
+g++ itcca_g.cpp bitops.o  itc_io_g.o`pkg-config --cflags --libs gdal` -w -fpermissive -o itcca_g
+
+
+
+
+
+
+
+
+REM ****************************************************
+REM      Post-Processing Programs
+REM ****************************************************
+
+
+g++ thickbit_g.cpp bitops.o  itc_io_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o thickbit_g
+
+
+g++ itcpcd_g.cpp bitops.o itc_io_g.o   `pkg-config --cflags --libs gdal`  -o itcpcd_g -w
+
+
+
+g++ itcsfil_g.cpp bitops.o itc_io_g.o   `pkg-config --cflags --libs gdal`  -w -fpermissive -o itcsfil_g 
+
+
+g++ cclosure_g.cpp bitops.o itc_io_g.o   `pkg-config --cflags --libs gdal` -w -fpermissive  -o cclosure_g 
+
+
+g++ stemdens_g.cpp bitops.o itc_io_g.o   `pkg-config --cflags --libs gdal`  -w -fpermissive -o stemdens_g 
+
+
+
+g++ shad_len_g.cpp bitops.o itc_io_g.o hist_g.o `pkg-config --cflags --libs gdal` -w -fpermissive -o shad_len_g 
+
+
+
+
+REM ****************************************************
+REM ****************************************************
+
+REM         Still COMPILING issues (OR examples of issues)
+
+
+NOGO cause bad quotes (one vertical and one slanted)
+
+g++ lattops_g.cpp bitops.o  itc_io_g.o 'pkg-config --cflags --libs gdal` -w -fpermissive -o lattops_g 
+
+
+
+
+
+
+REM ****************************************************
+
+REM *** RUNNING  a prog (typical) from a data directory
+
+REM ****************************************************
+
+> export PATH=$PATH:~/ITC-Suite_GDAL_Src_2025
+
+
+PRF_Data > itcpcd_g ./PRF_4x4km.tif PRF_ISOL.tif PRF_Class1.tif,1-8 PRF_ForInv_4x4km.shp HIGH ONT - X
+
+
+
+PRF_Data > itcpcd_g ./PRF_4x4km.tif PRF_ISOL.tif PRF_Class1.tif,1-8 PRF_ForInv_4x4km.shp HIGH ONT PRF_4x4km_DCM.tif PRF_Out.shp
+
+
+
+
+
