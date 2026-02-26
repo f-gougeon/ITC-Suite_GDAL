@@ -16,7 +16,7 @@
 	It is now available independent of PCI by using public domain software (GDAL).
 	Here's the operating philosophy.
 
-	Instead of a PCI file containning all, it is now assumed that all will be in 
+	Instead of a PCI file containning all, it is now assumed that all files will be in 
 	a single "project directory": images as tif files, bitmap as 1-bit tif files, 
 	vector layers as shp files, signatures as discrete files, etc., and
 	that ArcGIS (or other software) may be used to view all these.
@@ -46,8 +46,8 @@
 		signature segments are not visible, ...)
 
 	NOTE:   The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
-		but should be used as guides, not gospel. Please rely on ITC-Suite_GDAL_Info.txt and
-		ITC-Suite_GDAL.chm for more precise info on the programs parameters.
+		but should be used as guides, not gospel. Please rely on **ITC-Suite_GDAL_Info.txt** and
+		**ITC-Suite_GDAL.chm** for more precise info on the programs parameters.
 
 	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
 		Most of the time, it is not an issue. However, sometimes when ArcGIS (or PCI) 
