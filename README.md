@@ -38,21 +38,21 @@
 	The GDAL version of the ITC-Suite can be used from ArcGIS or ArcGISPro via appropriate
 	toolboxes, allowing users to stay completely within that environment.
 
-<P>
-	NOTE:	Partial use of a PCI file is often possible (as input). However,
-		user entered segment numbers will be that of GDAL, not of PCI.
-		Use "gdalinfo" and "ogrinfo" on the PCI file to find that order.
-		(e.g., bitmaps are numbered after images, vector layers are separate,
-		signature segments are not visible, ...)
-<P>
-	NOTE:   The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
-		but should be used as guides, not gospel. Please rely on  **ITC-Suite_GDAL_Info.txt**  and
-		**ITC-Suite_GDAL.chm** for more precise info on the programs parameters.
-<P>
-	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
-		Most of the time, it is not an issue. However, sometimes when ArcGIS (or PCI) 
-		 has control of the file, it may not overwrite at all and leave you with previously
-		 generated results
+### NOTES:	
+	- Partial use of a PCI file is often possible (as input). However,
+	user entered segment numbers will be that of GDAL, not of PCI.
+	Use "gdalinfo" and "ogrinfo" on the PCI file to find that order.
+	(e.g., bitmaps are numbered after images, vector layers are separate,
+	signature segments are not visible, ...)
+ 
+	- The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
+	but should be used as guides, not gospel. Please rely on  **ITC-Suite_GDAL_Info.txt**  and
+	**ITC-Suite_GDAL.chm** for more precise info on the programs parameters.
+ 
+	- My GDAL programs always complain when overwriting an exiting output file.
+	Most of the time, it is not an issue. However, sometimes when ArcGIS (or PCI) 
+	has control of the file, it may not overwrite at all and leave you with previously
+	generated results
 
 ### Ackowlegment to GDAL (Geospatial Data Abstraction Library) 
 
