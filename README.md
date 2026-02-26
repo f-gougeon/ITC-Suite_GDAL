@@ -11,15 +11,19 @@
 ### Introduction   
 	The ITC-Suite was first developed for the ARIES image analysis system in the 90's.
 	Later, it mostly ran under PCI/XPACE, then PCI/EASI, with PCI/ImageWorks and PCI/Geomatica 
-	to display and deal with PCI's ".pix" files (PCI v2022 at this time)
+	to display and deal with PCI's ".pix" files (PCI v2022 at this time). 
+	It has run on numerous platforms (VAX< SUN, SGI, ...).
+	It is now available independent of PCI by using public domain software (GDAL).
+	Here's the operating philosophy.
 
 	Instead of a PCI file containning all, it is now assumed that all will be in 
 	a single "project directory": images as tif files, bitmap as 1-bit tif files, 
 	vector layers as shp files, signatures as discrete files, etc., and
 	that ArcGIS (or other software) may be used to view all these.
 
-	In order to deal with less items on the command line, file nomenclature is
-	often predefined, but often using a "base file name" from the main image file.
+	In order to deal with less items on the command line, file nomenclature can be
+	predefined by using a "base file name" from the main image file, although generally
+	you can specify your own filenames.
 
 	Having an image file name such as "BaseName_IRGB.tif" for example
 	will ensure that other files will be of the type "BaseName_aaaa.ext"
@@ -42,11 +46,13 @@
 		signature segments are not visible, ...)
 
 	NOTE:   The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
-		but should be used as guides, not gospel.
+		but should be used as guides, not gospel. Please rely on ITC-Suite_GDAL_Info.txt and
+		ITC-Suite_GDAL.chm for more precise info on the programs parameters.
 
 	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
-		Most of the time, it is not an issue. However, sometimes when ArcGIS has control 
-		of the file, it may not overwrite at all and leave you with previous results
+		Most of the time, it is not an issue. However, sometimes when ArcGIS (or PCI) 
+		 has control of the file, it may not overwrite at all and leave you with previously
+		 generated results
 
 ### Ackowlegment to GDAL (Geospatial Data Abstraction Library) 
 
@@ -73,20 +79,22 @@ To run ITC-Suite programs from the ArcGIS Pro environment (Here for GDAL version
 One needs to load the appropriate ToolBox (e.g., ITC-Suite_GDAL-v3-10.atbx)
 AND first run  "GDAL_V3_10_Setup" before anything else.
 
-This will mimic the above three lines for the ArcGIS environment.
+This will mimic the three SET lines mentionned above for the ArcGIS environment.
 
 #### For LinuxLinux
 
 To run the ITC-Suite from a Linux "bash shell" check: **Linux_GDAL_ITC-Suite_Compile_v3.txt**
-It also has the setup for compiling programs.
-
+It is mostly about compiling the programs, but has the proper shell setup to run programs.
+**ITC-Suite_Linux_GDAL_AutoAna.sh** is a example of a script towards automatic analsis.
+<BR>
 **Note:** 	This is very exploratory at this point in time.
 			However,  programs run under Linux/Mint that I have used via Oracle Virtual Box 
 
 
 ### Additional Info 
 
-For info on how to run the ITC-Suite, one should check the "ITC-Suite_Docs" directory above.
+For info on how to run the ITC-Suite, one should check the "ITC-Suite_Docs" repository above
+and the docs (above) in this repository.
 
 For additional info on how to run the ITC-Suite, one should check the ITC-Suite Manual 
 from 2010 (meant for the PCI environment). 
