@@ -46,8 +46,8 @@
 		signature segments are not visible, ...)
 
 	NOTE:   The "ITC-Suite Manual" and "ITC-Suite.chm" are still very relevant to all this 
-		but should be used as guides, not gospel. Please rely on **ITC-Suite_GDAL_Info.txt** and
-		**ITC-Suite_GDAL.chm** for more precise info on the programs parameters.
+		but should be used as guides, not gospel. Please rely on <B>ITC-Suite_GDAL_Info.txt</B> and
+		<B>ITC-Suite_GDAL.chm*</B>for more precise info on the programs parameters.
 
 	NOTE:	My GDAL programs always complain when overwriting an exiting output file.
 		Most of the time, it is not an issue. However, sometimes when ArcGIS (or PCI) 
