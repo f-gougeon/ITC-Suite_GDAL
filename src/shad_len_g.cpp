@@ -1,6 +1,6 @@
 /* 
 
-SHAD_LEN - To find length of tree shadows in sparsely treed areas
+SHAD_LEN_G - To find length of tree shadows in sparsely treed areas
 
 Program name: 	shad_len_g.cpp
 Author: 	François A. Gougeon
@@ -183,6 +183,31 @@ c v1.9a		Sept. 2025	 	François Gougeon
 			- Reintroduced histogram printout(Histograms.txt)
 			
 			- Fixed write_stem_generic() to write on top of blob
+			
+c v2.0		March 2026	 	François Gougeon
+
+			- Minor bug fixing and cleaning 
+			
+			- Issues with write_stem_generic() (taking sun azimuth into account)
+			
+			- Shadow length vs tree heights (taking sun elevation into account)
+			
+			- Syncronizing GDAL and PCI versions (and documentation)
+			
+			- Removing histogram fields for the moment (not that useful)
+			
+			- Created shortfilename, shortfileout, shorttestfile to use in description
+
+
+c v2.1		May 2026	 	François Gougeon
+
+			- Minor bug fixing and cleaning 
+			
+			- Re-introduced histogram based HT_Mean90 and HT_Mean95
+			
+			- Syncronized W11/GDAL and Linux/GDAL versions (and documentation)
+
+			- Checking SAME results on Low Density Poly of PP1493386			
 c
 c 
 c
@@ -226,20 +251,32 @@ cl %SRCDIR%\hist.c /c /TP
 cl %SRCDIR%\shad_len.cpp error.obj bitops.obj itc_io.obj hist.obj /link /out:"%RELEASE_DIR%\shad_len.exe"
 
 
-REM		Compiling GDAL Version
+REM		Compiling W11/GDAL Version
+
+
+set CL= /MD 
+
+set LINK=gdal_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X20000000
+
 
 CL %SRCDIR%\shad_len_g.cpp  itc_io_g.obj bitops.obj  hist_g.obj error.obj /EHsc
+
+
+REM		Compiling Linux/GDAL Version
+
+g++ shad_len_g.cpp  itc_io_g.o bitops.o hist_g.o error.o  'pkg-config --cflags --libs gdal' -w -permissive -o shad_len_g
+
 
 
 */
 
 
-#define DEBUG_ME 1
+#define DEBUG_ME 0
 #define NO_SKIP 1
 #define SKIP 1
 
 #define PROG_NAME "SHAD_LEN_G"
-#define VERSION "v1.9a"
+#define VERSION "v2.1"
 
 #define MAX_INTERCEPT 100
 
@@ -275,7 +312,7 @@ extern "C" {
 #define BITMAPS     	16
 
 
-/* structure - list of tree crown encountered and parameters */
+/* Structure - list of tree crown encountered and parameters */
 /* In LOGSFIL, crown are objects like logs, stumps, ... */
 /* In SHAD_LEN crown are objects like tree shadows */
 
@@ -348,9 +385,6 @@ int  between(float a, float b, float c);
 
 void	Copy_Shape_File(char *, char *);	//  Copy Input polygon file info to output shape file
 void 	Prep_New_Fields(OGRLayer *);		//// create all the needed PCD fields in the output shape file
-
-
-
 void Paint_Plot_Ana_g(OGRLayer *);	// paint each polygon to testbitbuf and analyse its content
 
 
@@ -366,7 +400,6 @@ int		blocks;
 crown *List = NULL;
 unsigned char *isolbitbuf, *outbitbuf, *midbitbuf, *testbitbuf, *tempbitbuf;
 //unsigned char *bitbuf;		// not a real bitbuf, just a pointer
-char answer[10];
 
 int	vecmode = 0;			//flag on when dealing with vectors rather than bitmap	
 
@@ -407,7 +440,6 @@ int		xsize, ysize, channels;
 int 	count = 0;
 char  	*cptr;	// generic pointer to char
 
-
 int 	segnum;
 int 	segtype;
 int     testsegI[BITMAPS];
@@ -418,9 +450,10 @@ int 	polyarea;
 
 int		basef_len;	
 char	 *file_out, *Fname;		// just pointers
-char	fullfilename[250], fullfileout[250], shortfilename[250], testfilename[250];
-char	basefilname[250], shapefileout[250];
+char	fullfilename[250], fullfileout[250], shapefileout[250], testfilename[250], basefilname[250];
+char	shortfilename[250], shortfileout[250], shorttestfile[250];  //short file names for description info
 char	basefname[250];	
+
 
 //GDALDriver *poDriver;
 //char **papszOptions = NULL;
@@ -456,10 +489,8 @@ char 	pix_units[9], timedate[17];
 
 
 
-//Report = fopen("NUL", "w");			// to get rid of lots of printing
-Report = stdout;	  				// to all the debugging info
-
- PhaseI_bypass = 1;		// flag to bypass PhaseI processing
+Report = fopen("NUL", "w");			// to get rid of lots of printing
+//Report = stdout;	  				// to all the debugging info
 
 // pointer to object to store vertical line segments
 p1 = (crown *) malloc(sizeof(crown)); 
@@ -474,14 +505,14 @@ ph = (hist_inf *) malloc(sizeof(hist_inf));
 
 
 // assign parameter pointers to argumnets 
-
+/* 
 args[0] = (void *) file;
 args[1] = (void *) &dbib;
 args[2] = (void *) &dbob;
 args[3] = (void *) testsegI;
 args[4] = (void *) leng_thr;
 args[5] = (void *) blob_wid;
-args[6] = (void *) &sunang;
+args[6] = (void *) &sunang; */
 //args[7] = (void *) report;
 
 
@@ -579,7 +610,7 @@ ALLRegister();
 	//exit(-1);			// for debugging
 
 
-// Create SHORT file name (no dir) for display convenience and later, for output file description
+// Create SHORT file name (no path) for display convenience and later, for output file description
 
 	strcpy(shortfilename, argv[1]);
 //	printf("Shortfilename :  %s \n", shortfilename);
@@ -600,7 +631,11 @@ ALLRegister();
 
 	xsize = Pixels; ysize = Lines;	
 
-	printf("\n xsize=%d ysize=%d Pixels=%d Lines=%d \n",xsize, ysize, Pixels, Lines);
+	//printf("\n xsize=%d ysize=%d Pixels=%d Lines=%d \n",xsize, ysize, Pixels, Lines);
+	//printf( "Pixel Size = (%.2f,%.2f)\n", xpixsz, ypixsz );
+
+printf("\n---------------------------------------------------------------\n");
+
 
 // Checking on output bitmap (shadow length)
 
@@ -611,17 +646,17 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )		// need to CREATE an ou
 	//printf("basefname  :  %s \n", basefname);	
 	
 	printf("\nOutput file argument is \"-\" or \"#\", which implies no output filename was given\n");
-	printf("A new output image file name will be created from the \"base file name\" \n\n"); 
+	printf("An output image file name will be created from the \"base file name\" \n\n"); 
 	//basefname = temp;	 				// fake to init basefname as a char array (just a pointer)
 	strcpy(basefname, basefilname);	
 	
-	file_out = strncat(basefname,"_Length",7);	  	
+	file_out = strncat(basefname,"_ShadLen",8);	  	
 	//itoa(ch_in,ach_in,10); 	 
 	//sprintf(ach_in, "%d" , ch_in);	 	
 	//strncat(file_out,ach_in,3);
 	strncat(file_out,".tif",4);					// output image is forced to be a tif	
 	strcpy(fullfileout, file_out);
-	printf("\nOutput image file will be named \"%s\" \n\n", fullfileout);	
+	printf("\n\tOutput image file will be named \"%s\" \n\n", fullfileout);	
 	}
 
 else								// if  input bitmap, just add to that name
@@ -633,38 +668,59 @@ else								// if  input bitmap, just add to that name
 	//strcpy(file_out,argv[2]);	
 	//strcpy(fullfileout, file_out);
 	strcpy(fullfileout, argv[2]);
-	printf("\n** Output Filename as stated:  %s \n\n", fullfileout);	
+	printf("\n\t** Output Filename as stated:  %s \n\n", fullfileout);	
 	}
 
 
-// Check if OUTPUT file already exist (if so, ask to overwrite)
-
-	ima_out = (GDALDataset *) GDALOpen( fullfileout, GA_Update );
-
-	if (ima_out != NULL) 
-	  {
-	  printf("\n\n ### Output file %s already exist \n", fullfileout); 
-	  printf("\n\t OK to overwrite FULL image file (Y/N)? \t");  fgets(ans,80,stdin);
-
-	  if (ans[0] == 'n' || ans[0] == 'N')	  exit(1);		//dont overwrite the output file
- 
-	  printf("\n ### Existing OUTPUT file %s will be overwriten\n\n", fullfileout);
-	  	    
-	  }
-
-
-fprintf(stdout,"\nReading input bitmaps AND allocating memory for output bitmap\n");
-
-	if(segm_in == 0) segm_in = 1;
-	isolbitbuf = read_bitmap(fullfilename, segm_in);			// always 1 for tiff  file bitmap, different for PCI files 
-	safety_zone(isolbitbuf);
- 
-	printf("\nGetting memory for output bitmaps:\n");
+	//printf("\nGetting memory for output bitmaps:\n");
 	
 	bmsize =  ((Pixels*(int64)Lines+ 7) / 8);    // size of bitmaps in byte
 	outbitbuf = (PixVal *) calloc(bmsize,1);		// allocate (and zero) memory for an output bitmap 
 	check_mem(outbitbuf);
 	safety_zone(outbitbuf);
+
+
+// Check if OUTPUT file already exist (if so, ask to overwrite)
+
+	//ima_out = (GDALDataset *) GDALOpen( fullfileout, GA_Update );
+
+	ima_out = (GDALDataset *) GDALOpen( fullfileout, GA_ReadOnly );
+	
+	
+	if (ima_out) 
+	  {
+	  printf("\n\n ### Output file %s already exist \n", fullfileout); 
+	  printf("\n\t OK to overwrite FULL image file (Y/N)? \t");  fgets(ans,10,stdin);
+
+	  if (ans[0] == 'n' || ans[0] == 'N')	  exit(1);		//dont overwrite the output file
+ 
+	  printf("\n\t ** Existing OUTPUT file %s will be overwriten\n\n", fullfileout);
+	  	    
+	  }
+	else  { printf("\n\t ### Will create OUTPUT file %s \n\n", fullfileout); }
+
+
+
+// Create SHORT file name (no path) for output file in descriptions
+
+	strcpy(shortfileout, fullfileout);
+
+	cptr = strtok(shortfileout,"/\\");
+	while(cptr != NULL)
+	  {
+		//printf ("cptr : %s\n",cptr);
+		strcpy(shortfileout, cptr);
+		cptr = strtok(NULL, "/\\");
+	  }		
+	printf("\t Shortfilename of output :  %s \n", shortfileout);
+
+
+fprintf(stdout,"\nReading input bitmap of shadows \n");
+
+	if(segm_in == 0) segm_in = 1;
+	isolbitbuf = read_bitmap(fullfilename, segm_in);			// always 1 for tiff  file bitmap, different for PCI files 
+	safety_zone(isolbitbuf);
+ 
 
 	
 	//exit(-1);		// for degugging
@@ -719,9 +775,26 @@ if ( EQUALN(argv[3],"-",1 ) || EQUALN(argv[3],"#",1 ) )		// no polygon layer to 
 	//printf("\tFile name of testing area \"%s\"  \n", testfilename);		
 	strcpy(shapefileout, testfilename);
 	strcat(shapefileout, "_v2.");
-	strcat(shapefileout, extension);
+	//strcat(shapefileout, extension);
+	strcat(shapefileout, "shp");
 	printf("\t** File name of output shape file will be :  \"%s\"  \n", shapefileout);	
 	}
+	
+	
+// Create SHORT file name (no path) for output file in descriptions
+
+	strcpy(shorttestfile, testfilename);
+
+	cptr = strtok(shorttestfile,"/\\");
+	while(cptr != NULL)
+	  {
+		//printf ("cptr : %s\n",cptr);
+		strcpy(shorttestfile, cptr);
+		cptr = strtok(NULL, "/\\");
+	  }		
+	printf("\t Shortfilename of test area :  %s \n", shorttestfile);
+	
+	
 	
 //exit(-1);  // for debugging
 	
@@ -803,7 +876,7 @@ else
 	cptr = strtok(NULL, ", ");					// go after the comma	check for a space
 	if(cptr != NULL) sunang[1] = strtol(cptr, NULL, 10);	// change 2nd item to integer	
 		
-	printf("\n\t**Keeping sun azimuth of %d and sun elevation of %d degrees\n", sunang[0], sunang[1]);	
+	printf("\n\t**Using sun azimuth of %d and sun elevation of %d degrees\n", sunang[0], sunang[1]);	
 	}
 	
 
@@ -816,11 +889,9 @@ else
 
 /**********************************************************************/
 
-printf("\n\n**Preparing output text file of shadows meeting criteria\n\n");
+printf("\n\t**Preparing output text file of shadows meeting criteria: \"Shadows.txt\" \n");
 
 shadows_fp = fopen("Shadows.txt","w");
-
-histo_fp = fopen("Histograms.txt","w");
 
 time (&rawtime); timeinfo = localtime (&rawtime);
 fprintf(shadows_fp,"\n\tFrom program %s (%s) at %s\n\n", PROG_NAME, VERSION, asctime(timeinfo));
@@ -835,11 +906,31 @@ fprintf(shadows_fp,"\tAND with width between %d and %d cm\n",blob_wid[0],blob_wi
 
 fprintf(shadows_fp,"\tAND sun azimuth of %d and sun elevation of %d degrees\n", sunang[0], sunang[1]);
 
-
-
 fprintf(shadows_fp,"\n\nShadows Initial Position (P,L), length(m), width(m), area(p) \n");
 
-printf("\n---------------------------------------------------------------\n");
+
+printf("\n\t**Preparing output text file of (stands?) histograms: \"Histograms.txt\" \n");
+
+histo_fp = fopen("Histograms.txt","w");
+
+fprintf(histo_fp,"\n\tFrom program %s (%s) at %s\n\n", PROG_NAME, VERSION, asctime(timeinfo));
+
+fprintf(histo_fp,"Input Filename :  %s \n", fullfilename);
+
+fprintf(histo_fp,"Output Filename :  %s \n\n", fullfileout);
+
+fprintf(histo_fp,"\tTree shadows with length between %d and %d metres\n",leng_thr[0],leng_thr[1]);
+
+fprintf(histo_fp,"\tAND with width between %d and %d cm\n",blob_wid[0],blob_wid[1]);
+
+fprintf(histo_fp,"\tAND sun azimuth of %d and sun elevation of %d degrees\n", sunang[0], sunang[1]);
+
+fprintf(histo_fp,"\n---------------------------------------------------------------\n");	
+
+
+	
+printf("\n---------------------------------------------------------------\n");	
+	
 
 /**********************************************************************/
 
@@ -906,10 +997,10 @@ printf("\n\tAnalysing for bitmap test area ...\n");
 
 // If given a Test Area that is a SHAPE file (SEG_VEC = 1) , 
 
-printf("\nReading input Test Area from a Shape File \n");
+printf("\nReading Forest Polygons from the Shape File \n");
 		
 
-int iField, iFeature, layer_toget;
+int iField,  layer_toget;
 
 	vecmode = 1;	// test area(s) is a shp file 
 	
@@ -923,7 +1014,7 @@ int iField, iFeature, layer_toget;
 	if( piDS == NULL )
 		{fprintf(stderr, "\nFailed to open input file. Error : %s \n", strerror(errno)); exit( -1 );}
 
-	printf("\n\t**Test area file '%s' was opened for reading\n\n",argv[3]);
+	printf("\n\t**File '%s' was opened for reading\n\n",argv[3]);
 
 // Print generic info (driver used, ... )
 
@@ -1074,9 +1165,14 @@ printf("\n\t *** Preparing new fields to report SHADLEN info to output SHP file.
 	Prep_New_Fields(poLayer);	
 
 printf("\n--------------------------------------------------\n");	
-printf("\n\t *** REPORTING tree heights (shadow lengths) to output SHP file ... \n\n");
-     
- 	Paint_Plot_Ana_g(poLayer);			// paint AND ANALYSE all polygons (one by one )for shadow length
+printf("\n\t *** REPORTING tree heights (shadow lengths) to output SHP file ... \n");
+printf("\n--------------------------------------------------\n");	
+ 
+	 if(Report) { printf("\n\t OK to continue (Y/N)? \t");  fgets(ans,10,stdin); }
+	 
+	 if (ans[0] == 'n' || ans[0] == 'N')	  exit(1);		//dont overwrite the output file
+ 
+ 	Paint_Plot_Ana_g(poLayer);		// paint AND ANALYSE all polygons (one by one )for shadow length
 
 	goto Conclude;
 
@@ -1144,10 +1240,10 @@ if ( (segtype == SEG_BIT) ||(no_stands == 1) )
 
 if(no_stands > 1)
 	{
-	printf("\n\t\t  SUMMARY shadow length within all polygons\n"); 
+	printf("\n\t\t  SUMMARY shadow length within %d polygons\n", no_stands); 
 	printf("\n\t Average shadow length within the WHOLE test area %.2f \n", tot_tot_length/tot_s_crown );
-	fprintf(Report,"\n\t Average MODE of shadow length within the WHOLE test area %.2f \n\n", ((float)tot_mode/10)/no_stands );
-	fprintf(Report,"\n\t Average top 90%% of shadow length within the WHOLE test area %.2f \n\n", ((float)tot_mean95/10)/no_stands );
+	fprintf(Report,"\t Average MODE of shadow length within the WHOLE test area %.2f \n\n", ((float)tot_mode/10)/no_stands );
+	fprintf(Report,"\t Average top 90%% of shadow length within the WHOLE test area %.2f \n\n", ((float)tot_mean95/10)/no_stands );
 
 	fprintf(shadows_fp,"\n\t\t  SUMMARY shadow length within all polygons\n"); 
 	fprintf(shadows_fp,"\n\t Average shadow length within the WHOLE test area %.2f \n", tot_tot_length/tot_s_crown );
@@ -1159,40 +1255,50 @@ printf("\n---------------------------------------------------------------\n");
 
 // 		Writing output  bitmap 
 
-printf("\n\t** Writing Tree Stems of specified length to <<%s>>\n\n", fullfileout);
+printf("\n\t** Writing Tree Stems of specified length to <<%s>>\n", fullfileout);
+
+//printf("\n\t OK to continue before descrip..? \t");  fgets(ans,10,stdin);
 
 // Prep output image description
 
 if (segtype == 0)
-	sprintf(Description,"Tree Lengths(%d,%d) from %s reported for full image ", 
-				leng_thr[0], leng_thr[1], fullfilename);
+	sprintf(Description,"Tree Lengths(%d,%d) SunAng(%d,%d) from %s reported for full image ", 
+				leng_thr[0], leng_thr[1], sunang[0], sunang[1], fullfilename);
 
 if (segtype != 0)
-	sprintf(Description,"Tree Lengths(%d,%d) from %s reported for %s", 
-			leng_thr[0], leng_thr[1],fullfilename, testfilename);	
+
+//	sprintf(Description,"Tree Lengths(%d,%d)",leng_thr[0], leng_thr[1]);
+	sprintf(Description,"Tree Lengths(%d,%d) SunAng(%d,%d) from %s reported for %s", 
+			leng_thr[0], leng_thr[1],sunang[0], sunang[1], shortfilename, shorttestfile);	
 	
-	write_bitmap(outbitbuf, fullfileout);
+printf("\nOutput bitmap(tif)  description:\n %s \n\n", Description );
 
-
-// 		Writing description to output shape file : shapefileout
+//printf("\n\t OK to continue before writing bitmap to disk? \t");  fgets(ans,10,stdin);
+	
+	write_bitmap(outbitbuf, fullfileout); 
 
 if(vecmode)
 	{		
 	char 	Description2[80];
-	printf("\n\n** All polygons and their attributes (old & new) were moved to SHP file <<%s>>\n", shapefileout);
+	printf("\n\n** All polygons and their attributes (old & new) were moved to SHP file <<%s>>\n", shapefileout);		
 
-	strcpy(Description2,"Copy of " );
-	//strcat(Description2,	 piLayer->GetDescription());
-	strcat(Description2, testfilename);
-	strcat(Description2," with additional SHAD_LEN info" );
+//	sprintf(Description2,"Tree Lengths(%d,%d)",leng_thr[0], leng_thr[1]);		 
+	sprintf(Description2,"Copy of %s with additional SHAD_LEN info using Lengths(%d,%d) SunAng(%d,%d)",
+							shorttestfile, leng_thr[0], leng_thr[1], sunang[0], sunang[1] );						
+	
 	
 	poLayer->SetDescription(Description2);
-	printf("\nOutput layer DESCRIPTION:\n %s \n", poLayer->GetDescription() );
+	printf("\nOutput layer description:\n %s \n", poLayer->GetDescription() );
 	
 	GDALClose( poDS );		// Close that data set (shp file)
 	}
 
 
+fprintf(histo_fp,"\nEnd of shad_len_g analysis \n");
+
+fprintf(shadows_fp,"\nEnd of shad_len_g analysis \n");
+
+//printf("\n\t OK to continue (Y/N)? \t");  fgets(ans,10,stdin);
 
 /* 
 
@@ -1221,15 +1327,6 @@ printf("\n Count of set pixel in Output Bitmap  = %d\n", count);
  */
 
 
-Exit:
-
-//	printf("\n\n\n\n\t *** We are still in testing mode *** \n");
-
-// For some reason if you close files here, it does not do the rest	
-//	GDALClose(ima_in);
-//	GDALClose(ima_out);
-
-
 time (&rawtime);
 timeinfo = localtime (&rawtime);
 fprintf(stdout,"\n\n_______________________________\n");
@@ -1238,21 +1335,25 @@ fprintf(stdout,"\n %s (%s) finished at %s\n\n", PROG_NAME, VERSION,  asctime(tim
 
 // For people using this program via ArcGIS, give then some time to examine the results (before disappearing)
 
-if ((strncmp("ArcGIS ",argv[argc-1],3) == 0) )		// if last argument is ArcGIS or ArcMap
+//if ((strncmp("ArcGIS ",argv[argc-1],3) == 0) )		// if last argument is ArcGIS or ArcMap
+
+if  (EQUALN("ArcGIS ",argv[argc-1],3) )
 	{
-	fprintf(stdout,"\n\n######\n");
-	printf("\n Type anything to make this detailed window disappear and terminate %s ",PROG_NAME);
-	answer[0] = getc(stdin); 		// gets any answer or <CR>
+	//fprintf(stdout,"\n\n######\n");
+	printf("\n ARC: Type anything to make this detailed window disappear and to terminate %s properly\t\n", PROG_NAME);
+	ans[0] = getc(stdin); 		// gets any answer or <CR>
+	//fgets(ans,10,stdin);
     }
 
-	
-	printf("\nClosing all files and exiting program. \n");
+	//printf("\nClosing all files and exiting program. \n");
 
 	GDALClose(ima_in);		// NOTE: you cannot close files too early
 	GDALClose(ima_out);
-	GDALClose( poDS );		// Close that data set (shp file)
+	//GDALClose( poDS );		// Close that data set (shp file)
+	fclose(histo_fp);
+	fclose(shadows_fp);	
 	
-exit(0);				// exit properly 
+	exit(0);				// exit properly 
 
 
 
@@ -1295,7 +1396,7 @@ void init_rec(crown *p )
 
 //*************************************************************
 
-// Initialize structure about histogram information  (NOW in hist.c and hist_g.h)
+// Initialize structure about histogram information  (## NOW ## in hist.c and hist_g.h)
 
 /*
 void init_histo_struct(hist_inf *p)
@@ -1355,9 +1456,9 @@ if(PhaseI_bypass) goto PHASE_II;
 
 fprintf(Report,"\n\t *** Starting PHASE I to parametrize tree shadows ...\n\n");
 
+// Using midbitbuf for Phase I work (need to be cleared every loop)
 
-//goto PhaseII;		// to skip Phase I work
-
+for (i = 0; i < bmsize; i++)  *(midbitbuf + i) = 0;
 
 /* Scanning input bitmap for objects with possible tread going down */
 
@@ -1367,7 +1468,7 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
   {
   bitnum = (i-1)*(int64)Pixels + j-1 ;		/* bitnum starts at zero */
 
-  /* Find an initial part of shadow going down (at least 4 pixel long) */
+  /* Find an initial part of shadow going down (at least 2 (or 4)  pixel long) */
   /* Continue down in that object and record parameters */
 
  if (   testbit(bitbuf, bitnum)
@@ -1381,8 +1482,6 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
 
 	fill_vert(j, i, p1, bitbuf, midbitbuf);	// VERTICAL (down) recursive fill 
 	//and as it does it writes to intermediate BM (for 2nd phase) and erase from input BM 
-
-
 
 	x_length = xpixsz * (p1->xmax - p1->xmin +1);	// in metres (float) 
 	y_length = ypixsz * (p1->ymax - p1->ymin +1);
@@ -1398,7 +1497,7 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
 	p1->UTM_East = topleftX + transformX * (p1->xmax + p1->xmin)/2 ;	// centroid UTM position
 	p1->UTM_North = topleftY + transformY * (p1->ymax + p1->ymin)/2 ;
 
-
+	//printf("Blob %d: height %f width %f \n", t_blob, p1->length, p1->width);
 
 /**********************************************************************/
 
@@ -1426,18 +1525,19 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
 	s_blob = s_blob + 1 ;
 	tot_length = tot_length  + p1->length;		// accumulate length to get average length (in m) 
 
-	}	/* end of "initial shadow 4 pixel segment" loop  */
+	}	/* end of "initial shadow 2 (4) pixel segment" loop  */
 
 
 //   if( ((i/100)*100 == i) && (j == 3) ) IMPCounter( (float) i / (float) Lines); 
 
 
-  }	/* end of full bitmap (test area or polygon) scanning loop */
+  }	// end of full bitmap (test area or polygon) scanning loop
 
-	fprintf(Report,"       In PHASE I \n");
-	fprintf(Report,"%d line segments selected and %d erased, out of %d \n", s_blob, e_blob, t_blob);
+	fprintf(Report,"In PHASE I - %d line segments selected and %d erased, out of %d \n", s_blob, e_blob, t_blob);
 	fprintf(Report,"Average shadow blob length within test area %.2f \n",	tot_length/s_blob );
 
+	printf("In PHASE I - %d line segments selected and %d erased, out of %d \n", s_blob, e_blob, t_blob);
+	printf("Average shadow blob length within test area %.2f \n",	tot_length/s_blob );
 
 //*************************************************************************************************
 
@@ -1452,7 +1552,9 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
 */
 
 
-// Using tempbitbuf for Phase II work
+// Using tempbitbuf for Phase II work (need to be cleared every loop)
+
+for (i = 0; i < bmsize; i++)  *(tempbitbuf + i) = 0;
 
 PHASE_II:
 
@@ -1462,16 +1564,17 @@ PHASE_II:
 //If bypassing Phase I, use bitbuf directly
 
 if(PhaseI_bypass)
-	for (i = 0; i < bmsize; i++)  *(tempbitbuf + i) = *(bitbuf + i);
+	{ for (i = 0; i < bmsize; i++)  *(tempbitbuf + i) = *(bitbuf + i); }
 
 //If NOT bypassing Phase I, use midbitbuf 
 
 if( ! PhaseI_bypass)
-   for (i = 0; i < bmsize; i++)  *(tempbitbuf + i) = *(midbitbuf + i);  //dealing with the intermediate bitmap
+	{for (i = 0; i < bmsize; i++)  *(tempbitbuf + i) = *(midbitbuf + i); } //dealing with the intermediate bitmap
 
 safety_zone(tempbitbuf);
 
 fprintf(Report,"\n\t *** Starting PHASE II to parametrize  tree shadows ...\n\n");
+//printf("\n\t *** Starting PHASE II to parametrize  tree shadows ...\n\n");
 
 PhaseII:					// when skipping Phase I you get here 
 
@@ -1484,10 +1587,9 @@ tot_length = 0.0;
 
 for ( k = 0 ; k < 500 ; k++ ) histo[k]=0;	// empty histogram from previous run (previous polygon (forest stand))
 	
-// can the whole bitmap resulting from Phase I cleaning
+// Scan the whole bitmap resulting from Phase I cleaning
 
 for ( i = 3 ; i < (ysize-3) ; i++ )		// line number
-//{
   for ( j = 3 ; j < (xsize-3) ; j++ ) 	// pixel number
   {
   bitnum = (i-1)*(int64)Pixels + j-1 ;		/* bitnum starts at zero */
@@ -1527,29 +1629,31 @@ for ( i = 3 ; i < (ysize-3) ; i++ )		// line number
 
 
 // 			####   For debugging  ###
-//	if (i == 5282)
-	if ( i > 5280 && i < 5283 && j > 600 && j < 700 )		
-	  printf("** Shadow starting at %d %d (P,L): %d %d  %d %d %.3f %.3f %d \n", 
+
+	if ( i > 1240 && i < 1245 && j > 3360 && j < 3370 )		
+	  printf("\t### Shadow starting at %d %d (P,L): %d %d  %d %d %.3f %.3f %d \n", 
 				j, i, p1->xmin, p1->xmax, p1->ymin, p1->ymax, p1->length ,p1->width, p1->area);
-							
+					
 							
 							
 //	IF stem is too short or too long, dont use it
 
-	if ( (p1->length < leng_thr[0]) || (p1->length > leng_thr[1]) ) 
+	if ( (lround(p1->length) < leng_thr[0]) || (lround(p1->length) > leng_thr[1]) ) 
 	{
 	//erase_blob(j, i, p1, tempbitbuf);		// not needed as the fill_blob() already destroyed it
 	e_crown= e_crown +1;
 	continue;				// should continue scanning the bitmap and re-init object p1
+	//goto Cont_BM;			// if continue does not work properly
 	}
 
 //	IF blob is too small or too wide, dont use it (BLOB_WID is in cm, p1->width is n metre)
 
-	if ( (100*p1->width < blob_wid[0]) || (100*p1->width > blob_wid[1]) ) // compare in cm
+	if ( (lround(100*p1->width) < blob_wid[0]) || (lround(100*p1->width) > blob_wid[1]) ) // compare in cm
 	{
 	//erase_blob(j, i, p1, tempbitbuf);		// not needed as the fill_blob() already destroyed it
 	e_crown= e_crown +1;
 	continue;
+	//goto Cont_BM;			// if continue does not work properly
 	}
 
 
@@ -1568,38 +1672,50 @@ for ( i = 3 ; i < (ysize-3) ; i++ )		// line number
 	
 	//histo[(int) (10*p1->length)]++;		// create histogram of heights within this test area (in cm)
 										// x10 to have cm precision in integer array (2.4m is 24)
-										// above creates a very sparse histogram (as we work at 50cm)
+										// above creates a very sparse histogram (as we work at 50cm)									
 										
-										
-	histo[(int)round(p1->length)]++;
-	
+	histo[(lround(p1->length))]++;
 	
 	fprintf(shadows_fp,"Shadow starting at (P,L): %d %d %.3f %.3f %d \n", 
-							j, i, p1->length ,p1->width, p1->area);
+			j, i, p1->length ,p1->width, p1->area);
 
 
 	}		/* end of initial blob loop  */
 
+  Cont_BM:	
  
-// if( ((i/100)*100 == i) && (j == 3) )	printf("Done: %d %%\r", (int)((float)i/(float)Lines*100));
+  int jjj=0;		// is a NOOP = dummy instruction cause goto dont like going nowhere
+  
+ //if(((i/1000)*1000 == i) && (j == 3))	printf("Poly %d Done: %d %%\n", iFeat, (int)((float)i/(float)Lines*100));
+  
+  }		// End of full bitmap (test area or polygon) scanning loop 
 
-  }	
-//}		// End of full bitmap (test area or polygon) scanning loop 
-
-printf("\nPHASE II Done: 100%%\n\n");
+//fprintf(Report, "\nPHASE II Done: 100%%\n\n");
 
 //******************************************************************************************************
 
 //	 Report on Phase II results 
 
-	fprintf(Report,"       In PHASE II \n");
-	fprintf(Report," %d objects selected and %d erased, out of %d \n", s_crown, e_crown, t_crown);
+	fprintf(Report,"In PHASE II - %d objects selected and %d erased, out of %d \n", s_crown, e_crown, t_crown);
 	fprintf(Report,"Average shadow length(m) within test area %.2f \n\n",	tot_length/s_crown );
+
+	printf("In PHASE II - %d objects selected and %d erased, out of %d \n", s_crown, e_crown, t_crown);
+	printf("Average shadow length(m) within test area %.2f \n",	tot_length/s_crown );
+	// Taking sun elevation into account
+	printf("Tree heights(m) considering sun elevation %.2f \n",
+				((tot_length/s_crown) * tan(sunang[1]*3.14159/180)  ) );	
+
+
+	if(s_crown <= 10) {	
+		fprintf(histo_fp, "No histogram analysis for polygon %d cause too few stems detected\n", iFeat);
+		goto No_Histo; }
+
+
 
 // 	Analyse the histogram of shadows (heights)
 
-	
-	init_histo_struct(ph);			// to store histogram analysis results from ana_hist()
+ 
+	init_histo_struct(ph);	// to store histogram analysis results from ana_hist() also zeros items
 
 	ana_hist(histo, 500, ph);
 	
@@ -1608,65 +1724,79 @@ printf("\nPHASE II Done: 100%%\n\n");
 	tot_mode = tot_mode + ph->mode;
 	tot_mean95 = tot_mean95 + ph->mean95;	
 	
+// Add info to histograms.txt file
 	
-	fprintf(histo_fp,"\n\t\tHistogram of shadow lengths (m) seen in  %s \n\n", fullfileout);
-	
-	fprintf(histo_fp,"\nHistogram(cm) First=%d, Last=%d, Mode=%d, Count at mode=%d, Position95%% =%d Mean95%%=%.2f\n", 
-				ph->first, ph->last, ph->mode, ph->m_count, ph->ipos95, ph->mean95);
-
-	fprintf(histo_fp," %d objects selected and %d erased, out of %d \n", s_crown, e_crown, t_crown);
+	fprintf(histo_fp,"\n\t\tHistogram of shadow lengths(m) seen in polygon %d of  %s \n", iFeat, testfilename);		
+	fprintf(histo_fp,"Histogram: First=%d, Last=%d, Range=%d, Mean=%.2f, st_dev=%.2f \n", 
+				ph->first, ph->last, ph->range, ph->mean, ph->st_dev);				
+	fprintf(histo_fp," ... Mode=%d, Count at mode=%d, Position_90%%=%d, Mean_90%%=%.2f, Posi_95%%=%d, Mean_95%%=%.2f \n", 
+				 ph->mode, ph->m_count, ph->ipos90, ph->mean90, ph->ipos95, ph->mean95);	
+				
 	fprintf(histo_fp,"Average shadow length(m) within test area %.2f \n\n",	tot_length/s_crown );
-	
+	for (ii = 0; ii < ph->last; ii++) {fprintf(histo_fp,"%d ", histo[ii]);} fprintf(histo_fp,"\n");
 
-//	for (ii = 0; ii < ph->last; i++) {printf("%d ", histo[ii]); }
-		
-//	for (ii = 0; ii < 20; ii++) {printf("%d ", histo[ii]); }				
+
+// Also show details on screen
+
+	printf("Histogram of shadow lengths: \n");
+	for (ii = 0; ii < ph->last; ii++) {printf("%d ", histo[ii]);} printf("\n");
 	
-	for (ii = 0; ii < ph->last; ii++) {fprintf(histo_fp,"%d ", histo[ii]); }		
-		
+	printf("Histogram: First=%d, Last=%d, Range=%d, Mean=%.2f, st_dev=%.2f \n", 
+				ph->first, ph->last, ph->range, ph->mean, ph->st_dev);
+				
+	printf(" ... Mode=%d, Count at mode=%d, Position_90%%=%d, Mean_90%%=%.2f, Posi_95%%=%d, Mean_95%%=%.2f \n", 
+				 ph->mode, ph->m_count, ph->ipos90, ph->mean90, ph->ipos95, ph->mean95);	
+				
+	
+No_Histo:
+	fprintf(histo_fp, "\n");
 		
 //******************************************************
 
 // IF VECTOR MODE --- Write info to appropriate record in output layer
 
-//	if (poLayer >0)			// in VECTOR MODE 
 	if (poLayer != NULL)			// in VECTOR MODE 
 	  {
 	 // printf("\nAdding summarizing info to << vector layer %d >>\n", poFeature);
 	 
 	 //printf("\nAdding summarizing info to output vector layer: <<%s>> \n\n", shapefileout);
-	 
-	 
+	 	 
 	//poFDefn = poLayer->GetLayerDefn();
 	   
 	   
 
-	// Get field "Area_SL" and populate
+	// Get field "AreaSL(ha)" and populate
 	
-	iField =  poFeature->GetFieldIndex("Area_SL");		
-	if(iField == -1) { printf("ERROR Getting field index for Area_SL\n\n"); exit(-1);}
-	fprintf(Report,"iField for Area_SL : %d\n", iField);	
+	iField =  poFeature->GetFieldIndex("AreaSL(ha)");		
+	if(iField == -1) { printf("ERROR Getting field index for AreaSL(ha)\n\n"); exit(-1);}
+	fprintf(Report,"iField for AreaSL(ha) : %d\n", iField);	
     //poFeature->SetField(iField, 3.55 );			// to TEST
     poFeature->SetField(iField, polyarea*xpixsz*ypixsz/10000);		
-	fprintf(Report,"Area_SL put in field (ha) : %.2f \n", polyarea*xpixsz*ypixsz/10000);	
+	fprintf(Report,"AreaSL(ha) put in field : %.2f \n", polyarea*xpixsz*ypixsz/10000);	
 
 
-// Get field "AvHeightSL" and populate
+// Get field "AvHt_SL(m)" and populate
 	
-	iField =  poFeature->GetFieldIndex("AvHeightSL");		
-	if(iField == -1) { printf("ERROR Getting field index for AvHeightSL\n\n"); exit(-1);}
-	fprintf(Report,"iField for AvHeightSL : %d\n", iField);		
-	poFeature->SetField(iField,  ph->mean);		
-	fprintf(Report,"AvHeightSL put in field (m) : %.2f \n", ph->mean);	
-
+	iField =  poFeature->GetFieldIndex("AvHt_SL(m)");		
+	if(iField == -1) { printf("ERROR Getting field index for AvHt_SL(m)\n\n"); exit(-1);}
+	fprintf(Report,"iField for AvHt_SL(m) : %d\n", iField);		
+	//poFeature->SetField(iField,  ph->mean);		// dont rely too much on histogram
+	poFeature->SetField(iField, (tot_length/s_crown));	
+	// Taking sun elevation into account
+	poFeature->SetField(iField, (tot_length/s_crown) * tan(sunang[1]*3.14159/180)  );	
+	//fprintf(Report,"AvHt_SL(m) put in field (m) : %.2f \n", ph->mean);	
+	fprintf(Report,"AvHt_SL(m) put in field (m) : %.2f \n",
+			(tot_length/s_crown) * tan(sunang[1]*3.14159/180) );
 
 // Get field "HTSamples" and populate
 	
 	iField =  poFeature->GetFieldIndex("HTSamples");		
 	if(iField == -1) { printf("ERROR Getting field index for HTSamples\n\n"); exit(-1);}
 	fprintf(Report,"iField for HTSamples: %d\n", iField);	
-    poFeature->SetField(iField, ph->samples);		
-	fprintf(Report,"HTSamples put in field (m) : %d \n", ph->samples);	
+    //poFeature->SetField(iField, ph->samples);		// dont rely too much on histogram
+	poFeature->SetField(iField, s_crown);
+	fprintf(Report,"HTSamples put in field (m) : %d \n", s_crown);	
+
 
 // Get field "HT_ST_DEV" and populate
 	
@@ -1678,17 +1808,27 @@ printf("\nPHASE II Done: 100%%\n\n");
 	fprintf(Report,"HT_ST_DEV put in field (m) : %.2f \n", ph->st_dev);	
 
 
-
-// Get field "HT_mean95" and populate
+// Get field "HT_Mean90" and populate
 	
-	iField =  poFeature->GetFieldIndex("HT_Mean_95");		
-	if(iField == -1) { printf("ERROR Getting field index for HT_mean95\n\n"); exit(-1);}
-	fprintf(Report,"iField for HT_Mean_95: %d\n", iField);	
+	iField =  poFeature->GetFieldIndex("HT_Mean90");		
+	if(iField == -1) { printf("ERROR Getting field index for HT_Mean90\n\n"); exit(-1);}
+	fprintf(Report,"iField for HT_Mean90: %d\n", iField);	
+	
+    poFeature->SetField(iField, ph->mean90);		
+	fprintf(Report,"HT_Mean90 put in field (m) : %.2f \n", ph->mean90);	
+
+
+
+// Get field "HT_Mean95" and populate
+	
+	iField =  poFeature->GetFieldIndex("HT_Mean95");		
+	if(iField == -1) { printf("ERROR Getting field index for HT_Mean95\n\n"); exit(-1);}
+	fprintf(Report,"iField for HT_Mean95: %d\n", iField);	
 	
     poFeature->SetField(iField, ph->mean95);		
-	fprintf(Report,"HT_mean95 put in field (m) : %.2f \n", ph->mean95);	
+	fprintf(Report,"HT_Mean95 put in field (m) : %.2f \n", ph->mean95);	
 
-
+/* 
 // Get field "HT_Mode" and populate
 	
 	iField =  poFeature->GetFieldIndex("HT_Mode");		
@@ -1698,7 +1838,7 @@ printf("\nPHASE II Done: 100%%\n\n");
     poFeature->SetField(iField, ph->mode);		
 	fprintf(Report,"HT_Mode put in field (m) : %d \n", ph->mode);	
 
-  
+  */ 
  
 // Need to move the feature (polygons and its attributes) to the output shp file
 // from memory --- Now we create a feature in the file
@@ -1812,10 +1952,10 @@ void	write_stem_vert(crown * p1, unsigned char *outbitbuf)
 
 	xpos = p1->xmin + (p1->xmax - p1->xmin)/2;		// aprox. x center of blob
 
-	//for ( i = p1->ymax ; i >=  p1->ymin ; i-- )		// write in the y direction going up in the image
-	for ( i = p1->ymin ; i <=  p1->ymax ; i++ )		// write in y  going down in the shadow
+	for ( i = p1->ymax ; i >=  p1->ymin ; i-- )		// write in the y direction going up in the image
+	//for ( i = p1->ymin ; i <=  p1->ymax ; i++ )		// write in y  going down in the shadow
 	  {
-	  bitnum = (i-1)*(int64)Pixels + xpos-1 ;
+	  bitnum = (i-1)*(int64)Pixels + xpos - 1 ;
 	  setbit(outbitbuf, bitnum);
 	  }
 }
@@ -1831,24 +1971,27 @@ void	write_stem_generic(crown * p1, unsigned char *outbitbuf)
 	int64 bitnum;
 	int i, j;
 	float xpos;	
-
+	
+	//xpos = p1->xmin + (p1->xmax - p1->xmin)/2.0;	// aprox. x center of blob
 	xpos = p1->xmin;
-	j = round(xpos);
+	if(sunang[0] <= 180) xpos = p1->xmax;		// nicer starting point for our line
+	j = lround(xpos);
 
-	for ( i = p1->ymin ; i <=  p1->ymax ; i++)			// write in the y direction (line direction - down image )
+//	for ( i = p1->ymin ; i <=  p1->ymax ; i++)			// write in the y direction (line direction - down image )
+
+	for ( i = p1->ymax ; i >=  p1->ymin ; i-- )			// write in the y direction going up from shadow base		
 	//for ( j = p1->xmin ; j <=  p1->xmax ; j++ )		// should create a box
 	//for ( j = xpos ; j <  xpos+2 ; j++ )				// should be two  pixel wide	
 	  {
 	  bitnum = (i-1)*(int64)Pixels + j-1 ;		// image coordinates start at (1,1)
 	  setbit(outbitbuf, bitnum);
-	  //j = j--;									// should be diagonal from bottom
-//	  xpos =  xpos + tan(sunang[0]*3.14159/180);    //Note: that tan() is negative // sub a small increment
-	  xpos =  xpos + tan( (180-sunang[0]) *3.14159/180); // "i" is assumed to increment by one
-	  j = round(xpos);
+	  //j = j--;									// should be diagonal from bottom (to test)
+	  xpos =  xpos + tan(sunang[0]*3.14159/180);    //If < 180o tan() is negative, so sub a small increment
+	  j = lround(xpos);
 	  }
 }
 
-
+ 
 
 /********************************************/
 
@@ -2197,7 +2340,7 @@ printf("\n--------------------------------------------------\n");
 	poLayer->ResetReading();	// just to be on the safe side (good practice)
  
 	printf("\n--------------------------------------------------\n");
-	printf("\n\t ** Moving field (attribute) data from input shp file to output shp file\n\n"); 
+	printf("\n\t ** Moving existing fields data from input shp file to output shp file\n\n"); 
 
   
   //for (iFeat=0; iFeat < 10; iFeat++)				// for testing
@@ -2545,39 +2688,45 @@ END_CSF:
 		the first instance of the field.
    SOLUTION: Check if a field exist before creating it. If exist, dont create.
    
+   SIMPLER SOLUTION: Just check  FIRST field, if  exist, assume all there & dont create any
 */
 
 void 	Prep_New_Fields(OGRLayer * poLayer)
 {
-	
-//	printf("\n\tCreating shad_len_g information fields in output shape file \n");
+	int iField;
+	printf("\n\tCreating shad_len_g information fields in the output shape file \n");
 
 // Area(ha) field (field #1)
 
-	printf( "Creating <Area_SL> field in output shape file.\n" );
-	
-	OGRFieldDefn oField1( "Area_SL", OFTReal );
-	oField1.SetWidth(10); oField1.SetPrecision(2); 
-	if( poLayer->CreateField( &oField1 ) != OGRERR_NONE )
-	  { printf( "\n\n ### Creating <Area_SL)> field failed.\n" ); exit( 1 ); }
-  
-  
-	printf( "Creating <AvHeightSL> field in output shape file.\n" );
+	iField =   poFeature->GetFieldIndex("AreaSL(ha)");		
+	if(iField == -1) 		// IF Fields dont exist already, create them (just check that one)
+	{
+		
+		
+	printf( "Creating <AreaSL(ha)> field in output shape file.\n" );
 
-	OGRFieldDefn oField2( "AvHeightSL", OFTReal );
-	oField2.SetWidth(3); oField2.SetPrecision(1); 
+	OGRFieldDefn oField1( "AreaSL(ha)", OFTReal );
+	oField1.SetWidth(5); oField1.SetPrecision(2); 
+	if( poLayer->CreateField( &oField1 ) != OGRERR_NONE )
+	  { printf( "\n\n ### Creating <AreaSL(ha))> field failed.\n" ); exit( 1 ); }
+
+  
+	printf( "Creating <AvHt_SL(m)> field in output shape file.\n" );
+
+	OGRFieldDefn oField2( "AvHt_SL(m)", OFTReal );
+	oField2.SetWidth(5); oField2.SetPrecision(2); 
 	if( poLayer->CreateField( &oField2 ) != OGRERR_NONE )
-	  { printf( "\n\n ### Creating <AvHeightSL> field failed.\n" ); exit( 1 ); }
+	  { printf( "\n\n ### Creating <AvHt_SL(m)> field failed.\n" ); exit( 1 ); }
 
 
 	printf( "Creating <HTSamples> field in output shape file.\n" );
 	
 	OGRFieldDefn oField3( "HTSamples", OFTInteger );
-	oField3.SetWidth(4);
+	oField3.SetWidth(5);
 	if( poLayer->CreateField( &oField3 ) != OGRERR_NONE )
 	  { printf( "\n\n ### Creating <HTSamples> field failed.\n" ); exit( 1 ); }
   
-
+  
 	printf( "Creating <HT_ST_DEV> field in output shape file.\n" );
 	
 	OGRFieldDefn oField4( "HT_ST_DEV", OFTReal );
@@ -2585,22 +2734,34 @@ void 	Prep_New_Fields(OGRLayer * poLayer)
 	if( poLayer->CreateField( &oField4 ) != OGRERR_NONE )
 	  { printf( "\n\n ### Creating <HT_ST_DEV)> field failed.\n" ); exit( 1 ); }
  
-	printf( "Creating <HT_Mean_95> field in output shape file.\n" );
+ 
+ 
+	printf( "Creating <HT_Mean90> field in output shape file.\n" );
 	
-	OGRFieldDefn oField5( "HT_Mean_95", OFTReal );
+	OGRFieldDefn oField5( "HT_Mean90", OFTReal );
 	oField5.SetWidth(5); oField5.SetPrecision(1); 
 	if( poLayer->CreateField( &oField5 ) != OGRERR_NONE )
-	  { printf( "\n\n ### Creating <HT_Mean_95)> field failed.\n" ); exit( 1 ); }
+	  { printf( "\n\n ### Creating <HT_Mean90)> field failed.\n" ); exit( 1 ); }
   
-
+ 
+ 
+	printf( "Creating <HT_Mean95> field in output shape file.\n" );
+	
+	OGRFieldDefn oField6( "HT_Mean95", OFTReal );
+	oField6.SetWidth(5); oField6.SetPrecision(1); 
+	if( poLayer->CreateField( &oField6 ) != OGRERR_NONE )
+	  { printf( "\n\n ### Creating <HT_Mean95)> field failed.\n" ); exit( 1 ); }
+  
+/*
 	printf( "Creating <HT_Mode> field in output shape file.\n" );
 	
-	OGRFieldDefn oField6( "HT_Mode", OFTInteger );
-	oField6.SetWidth(4);
-	if( poLayer->CreateField( &oField6 ) != OGRERR_NONE )
+	OGRFieldDefn oField7( "HT_Mode", OFTInteger );
+	oField7.SetWidth(4);
+	if( poLayer->CreateField( &oField7 ) != OGRERR_NONE )
 	  { printf( "\n\n ### Creating <HT_Mode> field failed.\n" ); exit( 1 ); }
+ */
  
- 
+	}  // end of if fields exist dont try to recreate 
 
 }	//    End of Prep_New_Fields()
 
@@ -2611,7 +2772,7 @@ void 	Prep_New_Fields(OGRLayer * poLayer)
 //***********************************************************************************
 
 /*
-   This function paints plot boundaries defined as vectors into a plot bitmap
+   This function paints plots (defined as polygons) one by one into an internal bitmap
 	AND does the shadow length analysis for ALL polygons in a layer
 */
 
@@ -2635,8 +2796,7 @@ pasVertices = (GDBVertex2D *) calloc(500,16);
 
 /* Loop to get ALL shapes within the layer */
 
-//printf("\n--------------------------------------------------\n");
-//printf("\nPainting vector-defined test areas into a bitmap in memory ... \n\n");  
+printf("\nPainting forest polygons into an internal bitmap AND analysing shadows within\n\n");  
   
 RingFlag2 = 0;
 notclosed = 0;
@@ -2650,18 +2810,20 @@ OGRPoint ptTemp, ptTemp2, ptTemp3, ptTemp4;
 
 piLayer->ResetReading();	
 poLayer->ResetReading();
+
+
 		
 //printf("\n\t **** Looping through features for polygon vertices ...\n\n");
 
 
-for (iFeat=0; iFeat < 2; iFeat++)				// for testing 
-//for (iFeat=0; iFeat <  piLayer->GetFeatureCount(); iFeat++)	  // for all features (polygons) in file
+//for (iFeat=0; iFeat <= 2; iFeat++)				// for TESTING and DEBUGGING 
+ 
+for (iFeat=0; iFeat <  piLayer->GetFeatureCount(); iFeat++)	  // for all features (polygons) in file
 	{
 	int poly = iFeat;
 	piFeature = piLayer->GetFeature(iFeat);
-    fprintf(Report,"\nReading vertices of polygon %d of input vector layer\n", iFeat);
-
-
+    fprintf(Report,"\nReading vertices of POLYGON %d of input vector layer\n", iFeat);
+	
     piGeometry = piFeature->GetGeometryRef();	// get its geometry, hoping polygon (3)
 
  	fprintf(Report,"Geometry is of type : %d \n", piGeometry->getGeometryType());		// ###
@@ -2712,9 +2874,13 @@ for (iFeat=0; iFeat < 2; iFeat++)				// for testing
 
 	   nVertex = k;
 
-	   //printf("\n* Painting polygon %d as raster in memory (nVertex=%d) \n", iFeat, nVertex);		// for debugging
+	   printf("\n\t *** Painting polygon %d as raster in memory (nVertex=%d) \n", iFeat, nVertex);		// for debugging
  
-	  	vect2rast_g(nVertex, pasVertices, testbitbuf, xsize, iFeat, set_flag=1);   
+ //		Zero  testbitbuf before every loop (every polgon)
+ 
+		for (i = 0; i < bmsize; i++) *(testbitbuf + i) = 0;
+	
+		vect2rast_g(nVertex, pasVertices, testbitbuf, xsize, iFeat, set_flag=1);   
 	   
 	   polyarea = fill_count;		//result from vect2rast_g()
 	
@@ -2740,8 +2906,8 @@ for (iFeat=0; iFeat < 2; iFeat++)				// for testing
 	 
 
 
-	fprintf(Report,"\nFor polygon %d - Total number of pixels inside %d, its area %.2f \n", 
-				iFeat, polyarea, polyarea*xpixsz*ypixsz/100/100 );	 
+//	fprintf(Report,"\nFor polygon %d - Total number of pixels inside %d, its area %.2f \n", 
+//				iFeat, polyarea, polyarea*xpixsz*ypixsz/100/100 );	 
 	   
 	goto CONT_LOOP;		// for testing, just use the outside vertices of simple polygon
 	   
@@ -2791,12 +2957,12 @@ for (iFeat=0; iFeat < 2; iFeat++)				// for testing
 
 CONT_LOOP:
 
-fprintf(Report,"For feature %d total number of vertices considered %d \n", iFeat, TVertices);
+//fprintf(Report,"For feature %d total number of vertices considered %d \n", iFeat, TVertices);
 
 fprintf(Report,"\nFor polygon %d - Total number of pixels inside %d, its area %.2f \n", 
-				iFeat, polyarea, polyarea*xpixsz*ypixsz/100/100 );	 	
+				iFeat, polyarea, polyarea*xpixsz*ypixsz/100/100 );					
 	
-	   }		// end of burning polgygon to bitmap
+	   }		// end of burning ONE polgygon to bitmap
 	   
 	   
 /* 
@@ -2806,7 +2972,7 @@ fprintf(Report,"\nFor polygon %d - Total number of pixels inside %d, its area %.
 	 */
 
 	// Scanning output bitmap to verify some content		FOR DEBUGGING
-
+/* 
 count = 0;
 for ( i = 3 ; i < (ysize-3) ; i++ )		
 for ( j = 3 ; j < (xsize-3) ; j++ ) 
@@ -2814,17 +2980,17 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
   int64 bitnum = (i-1)*(int64)Pixels + j-1 ;		
   if (testbit(testbitbuf, bitnum)) count++;
   }
-
+ 
 fprintf(Report,"\n Count of set pixel in TestBitmap (test area size) = %I64d\n", count);
+*/
 
-
-	// Test area (from polygon) need to be COMBINE with thick shadow areas for ananlysis
+// Test area (from polygon) need to be COMBINE with thick shadow areas for analysis
 
 for (i = 0; i < bmsize; i++)  *(testbitbuf + i) = (*(isolbitbuf + i)) & (*(testbitbuf + i));
 	
 	
 // Scanning output bitmap to verify some content		FOR DEBUGGING
-
+/* 
 count = 0;
 for ( i = 3 ; i < (ysize-3) ; i++ )		
 for ( j = 3 ; j < (xsize-3) ; j++ ) 
@@ -2833,15 +2999,12 @@ for ( j = 3 ; j < (xsize-3) ; j++ )
   if (testbit(testbitbuf, bitnum)) count++;
   }
 
-fprintf(Report,"\n Count of set pixel in test area and shadows areas = %I64d\n", count);
+fprintf(Report,"\n   Count of set pixel in test area AND shadows areas = %I64d\n", count);
+ */
 
-
-
-// **ANALYSE** that zone (stand) for shadow lengths
-
-	//printf("\n-----------------------------------------------------\n");
-	printf("\tAnalysing polygon %d with Area(p) = %d, its Area(ha) %.2f\n", 
-				iFeat, polyarea, polyarea*xpixsz*ypixsz/100/100 );	
+// 		**ANALYSE** that zone (stand) for shadow lengths
+	
+	printf("\n\t*** Analysing polygon %d with Area(ha) %.2f\n", iFeat, polyarea*xpixsz*ypixsz/100/100 );	
 				
 	poFeature = poLayer->GetFeature(iFeat);
 	
