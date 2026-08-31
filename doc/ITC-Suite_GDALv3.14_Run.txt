@@ -1,0 +1,22 @@
+
+
+REM 	To run ITC-Suite programs with GDAL version 3.14  (on Ciara and most PCs)
+
+REM	####  Assumes GDAL is at C: as below (i.e., not in Program Files)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.14;%PATH%
+
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.14\projlib
+
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.14\exe;%PATH%
+
