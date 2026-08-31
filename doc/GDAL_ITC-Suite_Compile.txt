@@ -1,0 +1,1025 @@
+
+REM	GDAL_ITC-Suite_Compile.txt
+
+REM	To compile programs using GDAL v2, v3 (32 and 64 bit versions)
+
+REM 	Francois Gougeon
+REM	Oct. 2016, June 2017, March 2020, April 2021, June 2021, Nov 2021, July 2022
+
+REM 	Francois Gougeon
+REM	Sept 2021
+REM	Mod to use SRCDIR and DESTDIR to switch more eaasrly between GDAL versions
+REM	Compiling **MUST BE DONE** from the DESTDIR producing for a particular GDAL version
+REM	of the ITC Suite (similar to the various PCI versions)
+
+REM 	Francois Gougeon
+REM	2024-2025
+
+REM	For the most modern stuff -- go past the 7 lines of Asterix 
+
+REM *****************************************************************
+
+REM	***** Compiler setup (32 bit)
+
+REM ****************************************
+
+REM 	To Set up Visual Studio 2015 (v14) environment variables (for 32 bit version) 
+
+REM ##### Better to do that VERY FIRST THING ### after starting cmd tool
+
+REM 	To Set up Visual Studio 2015 (v14) environment variables (for 32 bit versions) 
+
+REM set VS140COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\"
+REM call %VS140COMNTOOLS%\vsvars32.bat
+
+REM	Point to directories of "include files" and library
+
+	set INCLUDE=C:\gdal_32bit\gdal211\include;C:\libtiff-4.0.6\libtiff;%INCLUDE%
+
+REM To use gdal static lib (bigger prog., but self sufficient)
+REM #### DOES NOT WORK WELL
+set LIB=C:\gdal_32bit\gdal211\lib;C:\libtiff-4.0.6\libtiff;%LIB%
+set LINK=gdal.lib  libtiff.lib User32.lib
+
+
+REM To use gdal dynamic lib (.DLL) (## but 32b gdal.dll needs to be there, not 64bit)
+
+set LIB=C:\gdal_32bit\gdal211\gdal-2.1.1;C:\libtiff-4.0.6\libtiff;%LIB%
+set LINK=gdal_i.lib  libtiff.lib User32.lib
+
+REM CL gdal_test.cpp /c
+
+CL gdal_test.cpp /EHsc
+
+CL convert_ima.cpp  /EHsc
+
+
+********************
+
+REM Older tests
+
+rem 	CL Test_tiff.c libtiff_geo.lib 
+
+
+REM *****************************************************************
+REM *****************************************************************
+
+REM	***** Compiler setup  for *** 64 bit *** versions
+
+REM ****************************************
+
+REM 	To Set up Visual Studio 2015 (v14) environment variables (for 64 bit version) 
+REM	***** Compiler setup (64 bit)  ##### Better to do that VERY FIRST THING ###
+
+
+REM MAKE SURE the following is defined as "default env. variable" (no point just having it here)
+REM set VS140COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools"
+
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall" amd64
+
+REM	Point to directories of "include files" and library
+
+set INCLUDE=C:\gdal-2.1.1\include;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%INCLUDE%
+set LIB=C:\gdal-2.1.1\lib;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+
+REM What to link with (at minimum)
+
+REM set LINK=libtiff_geo.lib /subsystem:console /incremental:no  /DEFAULTLIB:MSVCRT
+REM set LINK=libtiff.lib /subsystem:console /incremental:no  /DEFAULTLIB:MSVCRT /machine:X86
+REM set LINK=libtiff.lib /subsystem:console /incremental:no /NODEFAULTLIB:MSVCRT
+REM	set LINK=gdal.lib  libtiff.lib User32.lib
+
+
+REM	Compilation default variables 
+
+REM set CL= /MD /W3  /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS"  /FD
+REM set CL=%CL% /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /wd4996 /wd4244 /wd4101
+
+
+C and C++ Programs definitively wants the gdal_i.dll
+
+set CL= /MD
+set LINK=gdal_i.lib  libtiff.lib User32.lib
+
+
+rem 	CL Test_tiff.c libtiff_geo.lib
+
+REM 	The C program
+
+CL gdal_test.c
+
+
+REM 	The C++ program (quite different actually)
+
+CL gdal_test.cpp 
+
+
+
+
+*****************************************************************
+*****************************************************************
+
+REM	***** Compiler setup  Version 3.0.0 of Gdal 64bits 
+
+	March 2020  -- COVID-19 Work at HOMEsetups (on personal laptop D: drive)
+
+*****************************************************************
+*****************************************************************
+
+REM 	To Set up Visual Studio 2015 (v14) environment variables (for 64 bit version)
+REM	***** Compiler setup (64 bit)  ##### Better to do that VERY FIRST THING ###
+REM	##### stay at C:\Windows\system32 (i.e., dont CD away)
+
+REM MAKE SURE the following is defined as "default env. variable" (no point just having it here)
+REM set VS140COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools"
+
+
+REM ##### Better to do that *** VERY FIRST THING ***
+
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+
+
+REM	Point to directories of "include files" and library
+
+rem set INCLUDE=D:\GDAL_3.0.0\include;D:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%INCLUDE%
+REM set LIB=D:\GDAL_3.0.0\lib;D:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+REM Testing (That is OK GDAL NOW has libtiff in it)
+
+set INCLUDE=D:\GDAL_3.0.0\include;%INCLUDE%
+set LIB=D:\GDAL_3.0.0\lib;%LIB%
+
+
+REM	Compilation default variables 
+
+set CL= /MD 
+
+REM What to link with (at minimum)
+
+REM set LINK=libtiff_geo.lib /subsystem:console /incremental:no  /DEFAULTLIB:MSVCRT
+REM set LINK=libtiff.lib /subsystem:console /incremental:no  /DEFAULTLIB:MSVCRT /machine:X86
+REM set LINK=libtiff.lib /subsystem:console /incremental:no /NODEFAULTLIB:MSVCRT
+
+
+REM To use gdal static lib (bigger prog., but self sufficient)
+REM #### DOES NOT WORK WELL (with this version)
+rem set LINK=gdal.lib  libtiff.lib User32.lib
+
+
+REM To use gdal dynamic lib (.DLL)
+
+REM  set LINK=gdal_i.lib  libtiff_i.lib User32.lib
+
+set LINK=gdal_i.lib  libtiff_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+REM	Move to source diectory
+
+cd D:\ITC-Suite_GDAL
+
+cd D:\ITC-Suite_GDAL_Src_June
+
+D:
+
+
+
+
+
+
+****************************************************************
+*****************************************************************
+
+	***** Compiler setup GDAL v2.1.1  to v3.2.2  (64bits)
+
+	April-Oct 2021  -- To work on W-VIC-A144879 (my Ciara)
+
+*****************************************************************
+*****************************************************************
+
+REM	For Visual Studio 2019 v16.3.10 (x64) on W-VIC-A144879
+
+REM ##### Better to do that *** VERY FIRST THING ***
+REM ####   Really slow on Ciara, fast on ASUS (> 1 min)
+
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall" amd64
+
+*****************************
+*****************************
+
+REM 	With GDAL v 2.1.1  ( WORKS!!! )
+
+*****************************
+
+set INCLUDE=C:\gdal-2.0.1\include;%INCLUDE%
+set LIB=C:\gdal-2.0.1\lib;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+REM set LINK=gdal_i.lib  libtiff.lib proj.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+REM set LINK=gdal_i.lib  libtiff.lib  User32.lib  C:\gdal_3.0.2\release-1928-x64\lib\proj.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+set CL= /MD 
+
+set DESTDIR=C:\ITC-Suite_GDAL201\exe
+
+*****************************
+*****************************
+
+REM 	With GDAL v 3.0.0 (libtiff is included with v3)
+REM 	On my ASUS laptop
+
+REM set INCLUDE=C:\GDAL_3.0.0\include;%INCLUDE%
+REM set LIB=C:\GDAL_3.0.0\lib;%LIB%
+
+REM set DESTDIR=C:\ITC-Suite_GDAL302\exe
+REM cd %DESTDIR%
+
+*****************************
+****************************
+
+REM Connect with GDAL v 3.0.2		( WORKS!!! )
+
+set INCLUDE=C:\gdal_3.0.2\release-1928-x64\include;%INCLUDE%
+set LIB=C:\gdal_3.0.2\release-1928-x64\lib;%LIB%
+set LIB=C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+set LINK=gdal_i.lib  libtiff_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /STACK:0X200000
+
+set DESTDIR=C:\ITC-Suite_GDAL_v302\exe
+
+set SRCDIR=C:\ITC-Suite_GDAL_Src_July2022
+
+*****************************
+****************************
+
+REM 	Connect with GDAL v3.2.2	(on my ASUS) ( WORKS!!! )
+
+set INCLUDE=D:\gdal_3.2.2\include;%INCLUDE%
+
+set LIB=D:\gdal_3.2.2\lib;%LIB%
+
+set LINK=gdal_i.lib  libtiff_i.lib proj_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /STACK:0X200000 /NOIMPLIB
+
+set DESTDIR=D:\ITC-Suite_GDAL_v322\exe
+
+set SRCDIR=D:\ITC-Suite_GDAL_Src_June
+
+set CL= /MD 
+
+REM Do compilation from the destination direstory (DESTDIR) (GDAL version)
+
+cd D:\ITC-Suite_GDAL_v322\exe
+D:
+
+
+
+*****************************
+****************************
+
+REM 	Connect with GDAL v3.2.2	(on A144879) ( WORKS!!! )
+
+set INCLUDE=C:\gdal_3.2.2\include;%INCLUDE%
+
+set LIB=C:\gdal_3.2.2\lib;%LIB%
+
+set LINK=gdal_i.lib proj_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /STACK:0X200000 /NOIMPLIB
+
+set DESTDIR=C:\ITC-Suite_GDAL_v322\exe
+
+set SRCDIR=C:\ITC-Suite_GDAL_Src_June
+
+set CL= /MD 
+
+REM Do compilation from the destination direstory (DESTDIR) (GDAL version)
+
+cd C:\ITC-Suite_GDAL_v322\exe
+
+
+******************************************************************************************
+******************************************************************************************
+******************************************************************************************
+
+REM   To use gdal ***STATIC LIBRARY*** lib (bigger prog., but self sufficient)
+ 
+REM 	Connect with GDAL v2.0.1		(on A144879) ( WORKS!!! )
+
+set SRCDIR=C:\ITC-Suite_GDAL_Src_June
+set INCLUDE=C:\GDAL_2.0.1\include;%INCLUDE%
+set LIB=C:\GDAL_2.0.1\lib;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+
+set CL=
+
+REM set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /NODEFAULTLIB /STACK:0X200000
+
+set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+REM 	Tests
+
+CL %SRCDIR%\itc_io_g.cpp /c /EHsc /TP
+cl %SRCDIR%\bitops.cpp /c
+CL %SRCDIR%\ima_thr_g.cpp  itc_io_g.obj  bitops.obj /EHsc
+
+REM    You get a warning message but it works
+
+******************************************************************************************
+******************************************************************************************
+******************************************************************************************
+
+REM   To use gdal ***STATIC LIBRARY*** lib (bigger prog., but self sufficient)
+ 
+REM 	Connect with GDAL v3.2.2		(on A144879)
+
+set SRCDIR=C:\ITC-Suite_GDAL_Src_June
+set DESTDIR=C:\ITC-Suite_GDAL_v322\exe
+
+cd C:\ITC-Suite_GDAL_v322\exe
+
+set INCLUDE=C:\GDAL_3.2.2\include;%INCLUDE%
+set LIB=C:\GDAL_3.2.2\lib;%LIB%
+
+set CL=
+
+REM set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /NODEFAULTLIB /STACK:0X200000
+
+set LINK=gdal_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+REM 	Tests
+
+CL %SRCDIR%\itc_io_g.cpp /c /EHsc /TP
+cl %SRCDIR%\bitops.cpp /c
+CL %SRCDIR%\ima_thr_g.cpp  itc_io_g.obj  bitops.obj /EHsc
+
+
+**************************************************************
+
+REM	Compilation default variables (for ***dynamic lib*** (DLL)
+
+set CL= /MD 
+
+REM To use gdal and others dynamic lib (.DLL)
+REM  set LINK=gdal_i.lib  libtiff_i.lib User32.lib
+
+!!!!set LINK=gdal_i.lib  libtiff_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+
+**************************************************************
+
+REM	COMPILATION default variables (for a mix of static & dynamic libs)
+REM 	To use gdal.dll and others as static lib (### specially with GDAL v2.1.1)
+
+set CL= /MD 
+set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+???set LIB=C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+???set LINK= libtiff.lib  gdal_i.lib proj_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+???set LINK=gdal_i.lib  tiff.lib proj.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X200000
+
+
+**************************************************************
+**************************************************************
+**************************************************************
+**************************************************************
+**************************************************************
+**************************************************************
+**************************************************************
+
+
+REM		For Visual Studio 2022   v17.5(x64) on L-VIC-A148460 (on Dell laptop - W11)
+
+
+call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall" amd64
+
+
+REM *** POSSIBLE ADDITIONS  ***
+
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared;%INCLUDE%
+
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\ucrt\x64;%LIB%
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\um\x64;%LIB%
+
+
+
+REM **************************************************************
+
+REM		For Visual Studio 2022   v17.5(x64) at home
+
+REM call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall" amd64
+
+REM		For Visual Studio 2022   v17.5(x64) on W-VIC-A144879 (on Ciara - W10)
+
+call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall" amd64
+
+REM *** ADDITIONS  ***
+
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\ucrt;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared;%INCLUDE%
+
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\ucrt\x64;%LIB%
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\um\x64;%LIB%
+
+
+REM ****************
+REM ****************
+
+
+REM	For Visual Studio 2019 v16.3.10 (x64) on W-VIC-A144879 (on Ciara)
+
+	REM ##### Better to do that  **VERY FIRST THING** (1st thing in cmd window)
+	REM ####   Really slow on Ciara, fast on ASUS
+
+REM call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall" amd64
+
+REM *** POSSIBLE ADDITIONS 
+
+REM	Maybe needed if Visual Studio compiler does not setup properly
+REM 	You could check if the above command did setup INCLUDE and LIB properly as per below
+REM 	10.0.19041 correspond to the version of the operating system (Windows 10 Experience Pack 19041)
+
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um;%INCLUDE%
+set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared;%INCLUDE%
+
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\ucrt\x64;%LIB%
+set LIB=C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\um\x64;%LIB%
+
+
+REM ****************
+REM ****************	(on ASUS laptop)
+
+REM	For Visual Studio 2019   v16.3(x64) on my *** ASUS laptop **** (OR Ciara D: drive)
+
+REM call "D:\Microsoft Visual Studio 16.3\2019\Community\VC\Auxiliary\Build\vcvarsall" amd64
+
+
+REM ***********************************************************************
+REM ***********************************************************************
+REM ***********************************************************************
+
+REM	### COMPILATION default variables (in general for dynamic libs)
+
+REM	set CL= /MD 
+
+REM 	set LINK=gdal_i.lib  proj_i.lib  User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X20000000
+
+REM               *** proj_i.lib ***  not needed for GDAL  Version 3.10.0
+
+
+set CL= /MD 
+
+set LINK=gdal_i.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X20000000
+
+
+
+REM    *********
+
+	REM for version 2.0.1
+
+set LIB=C:\GDAL_2.0.1\lib;C:\libtiff-4.0.6_64b\tiff-4.0.6\libtiff;%LIB%
+set LIBRARY=C:\GDAL_2.0.1\include;%INCLUDE%
+set LINK=gdal_i.lib  libtiff.lib User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X2000000
+set DESTDIR=C:\ITC-Suite_GDAL_v201\exe/
+
+
+	REM for version 3.0.2
+
+set LIB=C:\gdal_3.0.2\release-1928-x64\lib;%LIB%
+set INCLUDE=C:\gdal_3.0.2\release-1928-x64\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v302\exe
+
+	REM for version 3.2.2
+
+set LIB=C:\gdal_3.2.2\lib;%LIB%
+set INCLUDE=C:\gdal_3.2.2\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v322\exe
+
+
+	REM for version 3.3.3
+
+set LIB=C:\gdal_3.3.3\lib;%LIB%
+set INCLUDE=C:\gdal_3.3.3\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v333\exe
+
+	REM for version 3.10.0
+
+REM set LIB=C:\Program Files\GDAL\lib;%LIB%
+REM set INCLUDE=C:\Program Files\GDAL\include;%INCLUDE%
+
+set LIB=C:\gdal_v3.10\lib;%LIB%
+set INCLUDE=C:\gdal_v3.10\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v3.10\exe
+cd  %DESTDIR%
+
+	REM for version 3.11
+
+set LIB=C:\gdal_v3.11\lib;%LIB%
+set INCLUDE=C:\gdal_v3.11\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v3.11\exe
+cd  %DESTDIR%
+
+	REM for version 3.12
+
+set LIB=C:\gdal_v3.12\lib;%LIB%
+set INCLUDE=C:\gdal_v3.12\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v3.12\exe
+cd  %DESTDIR%
+
+set CL= /MD /std:c++17
+
+
+
+	REM for version 3.13
+
+set LIB=C:\gdal_v3.13\lib;%LIB%
+set INCLUDE=C:\gdal_v3.13\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v3.13\exe
+cd  %DESTDIR%
+set CL= /MD /std:c++17
+
+	REM for version 3.14
+
+set LIB=C:\gdal_v3.14\lib;%LIB%
+set INCLUDE=C:\gdal_v3.14\include;%INCLUDE%
+set DESTDIR=C:\ITC-Suite_GDAL_v3.14\exe
+cd  %DESTDIR%
+set CL= /MD /std:c++17
+
+
+
+
+
+REM    ******************************************************
+REM    Present Source Directory
+
+
+REM 	set SRCDIR=C:\ITC-Suite_GDAL_Src_2024
+REM  set SRCDIR=C:\ITC-Suite_GDAL_Src_July_2025
+
+set SRCDIR=C:\ITC-Suite_GDAL_Src_2026
+
+REM Do compilation from the destination directory (DESTDIR) (GDAL version)
+
+cd  %DESTDIR%
+
+
+
+REM 	Test on a C program
+
+CL %SRCDIR%\gdal_test.c
+
+REM 	Test on a C++ program (quite different actually)
+
+CL %SRCDIR%\gdal_test.cpp 
+CL %SRCDIR%\gdal_test_vector.cpp /EHsc
+
+**************************************************************
+**************************************************************
+
+	### Programs to complile (and link)
+
+****************************************************************
+
+REM 	#### Utility programs
+
+*********************************************************
+
+cl %SRCDIR%\bitops.cpp /c
+CL %SRCDIR%\itc_io_g.cpp /c /EHsc
+
+CL %SRCDIR%\gdal_test.cpp /EHsc
+CL %SRCDIR%\gdal_test_vector.cpp /EHsc
+CL %SRCDIR%\convert_ima.cpp  /EHsc
+
+CL %SRCDIR%\convert_pix2dir.cpp  /EHsc
+
+*********************************************************
+
+REM 	#### Coarse Woody Debris (CWD) analysis programs
+
+*********************************************************
+
+
+rem cd d:\ITC-Suite_GDAL
+
+cl  %SRCDIR%\cwd_sfil_g.cpp /EHsc
+
+cl  %SRCDIR%\log_ivol_g.cpp /EHsc
+
+
+*******************************************
+
+	### GDAL prog. for FAO Forest Extent
+
+*******************************************
+
+
+cl Canada_FAO_Forest_g.cpp  /EHsc
+
+
+
+****************************************************************
+
+REM	### INTERMEDIATE GDAL version of the ITC Suite
+
+****************************************************************
+
+REM	*****  IF still using a lot of PCI functions in prog.
+
+REM	set LIB=C:\pcisdk_v2017\lib;%LIB%
+
+REM	set INCLUDE=C:\pcisdk_v2017\lib;%INCLUDE%
+
+REM	set LINK=pcic201700.lib core201700.lib counter201700.lib %LINK%
+
+
+******************************************************
+
+
+
+REM Compile (only) "C" modules 
+
+REM 	The .c makes sure they are considered "c" prog. 
+REM	but "/TP" makes sure they use the c++ compiler to deal with {extern "C"} in .h files
+
+REM cl %SRCDIR%\hist_g.c /c /EHsc /TP
+REM cl %SRCDIR%\error.c /c /EHsc /TP
+
+REM Compile (only) "C++" modules 
+
+rem cl bitops.cpp  /EHsc /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE"
+
+rem CL itc_io.cpp /c /EHsc /TP
+
+***********************************************************
+***********************************************************
+
+	### Compiling of the GDAL version of ITC Suite
+
+***********************************************************
+
+cl %SRCDIR%\hist_g.c /c /EHsc /TP
+cl %SRCDIR%\error.c /c /EHsc /TP
+CL %SRCDIR%\bitops.cpp /c /EHsc /TP
+CL %SRCDIR%\itc_io_g.cpp /c /EHsc
+
+CL %SRCDIR%\vfolrules.c /c  /TP
+CL %SRCDIR%\itcvfol_g.cpp vfolrules.obj error.obj hist_g.obj /EHsc
+
+
+CL %SRCDIR%\isolrules.c /c /TP
+CL %SRCDIR%\itcisol_g.cpp  isolrules.obj itc_io_g.obj error.obj /EHsc 
+
+CL %SRCDIR%\itcmg_g.cpp itc_io_g.obj /EHsc
+
+CL %SRCDIR%\eigens.c  /c /TP
+CL %SRCDIR%\itcssg_g.cpp  eigens.obj itc_io_g.obj  /EHsc
+
+CL %SRCDIR%\itcsc_g.cpp  eigens.obj itc_io_g.obj bitops.obj /EHsc 
+
+CL %SRCDIR%\itcca_g.cpp  itc_io_g.obj bitops.obj /EHsc 
+
+CL %SRCDIR%\itcafav_g.cpp  itc_io_g.obj bitops.obj /EHsc 
+
+CL %SRCDIR%\itcpcd_g.cpp  itc_io_g.obj bitops.obj /EHsc 
+
+
+
+
+REM In development
+
+CL %SRCDIR%\shad_len_g.cpp  itc_io_g.obj bitops.obj  hist_g.obj /EHsc 
+
+CL %SRCDIR%\bmcolor_g.cpp  itc_io_g.obj bitops.obj /EHsc 
+
+**************************************
+
+REM	 ITC-Suite Utilities
+
+CL %SRCDIR%\ndvi_ima_g.cpp /EHsc
+
+CL %SRCDIR%\glinv_g.cpp hist_g.obj /EHsc
+
+CL %SRCDIR%\ave_filter_g.cpp  /EHsc   
+
+CL %SRCDIR%\ima_thr_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\homogen_g.cpp  /EHsc
+
+CL %SRCDIR%\lattops_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\thickbit_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\bmcombo_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\itcsfil_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\cclosure_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+CL %SRCDIR%\stemdens_g.cpp  itc_io_g.obj bitops.obj /EHsc
+
+
+**************************************
+
+REM	 GDAL ITC-Suite FORTRAN programs
+
+**************************************
+
+REM Make Intel Fortran compiler available
+
+set path=%PATH%;%ProgramFiles(x86)%\Intel\oneAPI\compiler\2022.0.3\windows\bin\intel64
+
+set LIB=%LIB%;"C:\Program Files (x86)\Intel\oneAPI\compiler\2022.0.3\windows\compiler\lib\intel64_win"
+
+
+REM 	Compile FORTRAN SUBprogram
+
+ifort /4L132  %SRCDIR%\imthres2_g.f /c
+ifort /4L132  %SRCDIR%\mfpwbrdf2_g.f /c
+ifort /4L132  %SRCDIR%\grad_dc2_g.f /c
+
+
+REM Compile and Link C++ header program and FORTRAN program
+
+CL %SRCDIR%\imthres_g.cpp  imthres2_g.obj itc_io_g.obj bitops.obj /EHsc
+CL %SRCDIR%\mfpwbrdf_g.cpp  mfpwbrdf2_g.obj itc_io_g.obj bitops.obj /EHsc
+CL %SRCDIR%\grad_dc_g.cpp  grad_dc2_g.obj itc_io_g.obj bitops.obj /EHsc
+
+
+
+
+REM 	*** TEST ***
+REM	Compile a FORTRAN program as an independent (stand alone) program
+
+REM		ifort /4L132  %SRCDIR%\imthres_g.f /c
+
+
+*****************************************************
+*****************************************************
+*****************************************************
+	####   TO RUN
+
+	To run GDAL version of the ITC-Suite
+
+	You need these setups at the cmd window
+
+******************************************************
+
+***	To run programs (for GDAL version 2.0.1)
+
+set PATH=C:\ITC-Suite_GDAL_v201\exe;%PATH%
+
+*** Projections under GDAL v2.0.1
+
+set GDAL_DATA=C:\ITC-Suite_GDAL_v201\data
+
+	OR
+set GDAL_DATA=C:\ITC-Suite_GDAL_v201\exe\data
+
+*********************************************
+
+REM 	To run programs (GDAL_3.0.0)  
+
+(***************** on ASUS laptop **** NOTE D:\)
+
+set path=D:\GDAL_3.0.0;%PATH%
+set path=D:\ITC-Suite_GDAL;%PATH%
+
+rem  *** Projections under GDAL v3.0.0
+
+set PROJ_LIB=D:\GDAL_3.0.0\projlib
+
+
+
+******************************************************
+
+REM 	To run programs - For GDAL version 3.0.2	(on Ciara, on Z80)
+
+
+set PATH=C:\ITC-Suite_GDAL_v302\exe;%PATH%
+
+set PATH=C:\gdal_3.0.2\release-1928-x64\bin;%PATH%
+
+set PROJ_LIB=C:\gdal_3.0.2\release-1928-x64\bin\proj7\share
+
+REM set PROJ_LIB=C:\ITC-Suite_GDAL302\exe\GDAL\GDAL-data
+REM set PROJ_LIB=C:\GDAL_3.0.2\release-1928-x64\bin\gdal-data
+REM set PROJ_LIB=C:\GDAL_3.0.2\release-1928-x64\bin\proj7\share
+
+
+REM  	GDAL Apps (like gdalinfo)
+
+set PATH=C:\gdal_3.0.2\release-1928-x64\bin\gdal\apps;%PATH%
+
+
+******************************************************
+
+REM 	To run programs - For GDAL version 3.2.2	(on ASUS laptop)
+
+set PATH=D:\ITC-Suite_GDAL_v322\exe;%PATH%
+
+REM 	for the DLLs
+
+set PATH=D:\GDAL_3.2.2\bin;%PATH%
+
+REM	For the projections
+
+set PROJ_LIB=D:\GDAL_3.2.2\bin\proj7\share
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.2.2	(on Ciara, on Z80)
+
+REM 	###### V3.2.2 Some issues with vector layers
+
+set PATH=C:\ITC-Suite_GDAL_v322\exe;%PATH%
+
+REM 	for the DLLs
+
+set PATH=C:\GDAL_3.2.2\bin;%PATH%
+
+REM	 For the apps of GDAL (like gdalinfo)
+
+set path=C:\gdal_3.2.2\bin\gdal\apps;%PATH%
+
+REM	For the projections
+
+set PROJ_LIB=C:\GDAL_3.2.2\bin\proj7\share
+
+
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.3.3  (on Ciara, on Z80)
+
+REM	Where the ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v333\exe;%PATH%
+
+REM 	Where the GDAL libraies are located
+
+set PATH=C:\GDAL_3.3.3\bin;%PATH%
+
+REM   For the apps of GDAL (like gdalinfo)
+
+set path=C:\gdal_3.3.3\bin\gdal\apps;%PATH%
+
+REM   For the projection info
+
+set PROJ_LIB=C:\GDAL_3.3.3\bin\proj7\share
+
+
+
+
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.9.2  (on Hull PC, on Ciara, on Z80)
+
+REM	Where the ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v392\exe;%PATH%
+
+REM 	Where the GDAL libraies are located
+
+set PATH=C:\GDAL_3.9.2\bin;%PATH%
+
+REM   For the apps of GDAL (like gdalinfo)
+
+set path=C:\gdal_3.9.2\bin\gdal\apps;%PATH%
+
+REM   For the projection info
+
+REM set PROJ_LIB=C:\GDAL_3.9.2\bin\proj9\share
+set PROJ_DATA=C:\GDAL_3.9.2\bin\proj9\share
+
+
+
+*****************************************************
+
+REM 	To run programs - For GDAL version 3.10.0  (on Ciara and other PCs)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.10;%PATH%
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.10\projlib
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.10\exe;%PATH%
+
+
+*****************************************************
+
+REM 	To run ITC-Suite programs with GDAL version 3.11  (on Ciara and most PCs)
+
+REM	####  Assumes GDAL is at C: as below (i.e., not in Prog Files)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.11;%PATH%
+
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.11\projlib
+
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.11\exe;%PATH%
+
+
+*****************************************************
+
+REM 	To run ITC-Suite programs with GDAL version 3.12  (on Ciara and most PCs)
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.12;%PATH%
+set path=C:\gdal_v3.12\bin;%PATH%
+set path=C:\gdal_v3.12\bin\gdal\apps;%PATH%
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.12\projlib
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.12\exe;%PATH%
+
+*****************************************************
+
+REM 	To run ITC-Suite programs with GDAL version 3.13  (on Ciara and most PCs)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+REM 	AND  	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.13;%PATH%
+set path=C:\gdal_v3.13\bin\gdal\apps;%PATH%
+
+REM REALLY NEEDED !!!!
+
+set path=C:\gdal_v3.13\bin;%PATH%
+
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.13\projlib
+
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.13\exe;%PATH%
+
+
+
+
+
+*****************************************************
+
+REM 	To run ITC-Suite programs with GDAL version 3.14  (on Ciara and most PCs)
+
+
+REM   For the apps of GDAL (like gdalinfo)
+
+set path=C:\gdal_v3.14;%PATH%
+
+REM 	Where the GDAL DLL are located
+
+set path=C:\gdal_v3.14\bin;%PATH%
+
+REM   For the projection info is located
+
+set PROJ_LIB=C:\gdal_v3.14\projlib
+
+REM	  Where the GDAL ITC-Suite is located
+
+set PATH=C:\ITC-Suite_GDAL_v3.14\exe;%PATH%
+
+
+
+
+REM is this needed ???
+
+set GDAL_DATA=C:\gdal_v3.14\gdal-data
+
+set GDAL_DRIVER_PATH=C:\gdal_v3.14\gdalplugins
+
+
