@@ -6,7 +6,7 @@
 
 	Nov 2018, April 2020, July 2020, April-June 2021, June 2022, 
 	July 2023, Oct 2023, July 2024, Oct-Nov 2024, Jan-June 2025
-	Jan-Feb 2026
+	Jan-Feb 2026, Sept. 2026
 
 ### Introduction   
 The ITC-Suite was first developed for the ARIES image analysis system in the 90's.
@@ -22,13 +22,13 @@ vector layers as shp files, signatures as discrete files, etc., and
 that ArcGIS (or other software) may be used to view all these.
 
 In order to deal with less items on the command line, file nomenclature can be
-predefined by using a "base file name" from the main image file, although generally
-you can specify your own filenames.
+predefined by using a "base file name" extracted from the main image file, 
+although generally you can specify your own filenames.
 
-Having an image file name such as "BaseName_IRGB.tif" for example
+For example, having an image file name such as "BaseName_IRGB.tif"
 will ensure that other files will be of the type "BaseName_aaaa.ext"
-For examples, "BaseName_VFOL.tif"   as output from itcvfol_g.exe
-or "BaseName_ISOL.tif"  as output from itcisol_g.exe
+(e.g.,  "BaseName_VFOL.tif" as output from itcvfol_g.exe
+or "BaseName_ISOL.tif"  as output from itcisol_g.exe).
 Of course the "BaseName" should reflects the name of the main project in that directory.
 The underscore is use to separate the "base file name" from the rest of the file name.
 Full directory path is now mostly supported (i.e., not fully tested yet as the philosophy 
@@ -60,6 +60,7 @@ generated results
 - GDAL - Geospatial Data Abstraction Library: Version 3.0.0 (Dec. 2019)
 - GDAL - Geospatial Data Abstraction Library: Version 3.3.3 (Dec. 2021)
 - GDAL - Geospatial Data Abstraction Library: Version 3.11  (Feb. 2025)
+- GDAL - Geospatial Data Abstraction Library: Version 3.14  (July 2026)
 
 Open Source Geospatial Foundation, 
 
@@ -68,16 +69,16 @@ Thanks Frank (Warmerdam)
 ### Running GDAL version of the ITC-Suite
 
 #### From command prompt window
-To run the ITC-Suite from a Windows10/11 "cmd prompt window", see **ITC-Suite_GDALv3.10_Run.txt**.
+To run the ITC-Suite from a Windows10/11 "cmd prompt window", see **ITC-Suite_GDALv3.14_Run.txt**.
 Copy and paste the three(3) SET lines into your window. 
 **Note:** They may need modifiations if the GDAL or ITC-Suite locations are different on your computer.
 
 #### From ArcGIS Pro
 
-To run ITC-Suite programs from the ArcGIS Pro environment (Here for GDAL version 3.10.0) :
+To run ITC-Suite programs from the ArcGIS Pro environment (Here for GDAL version 3.14.0) :
 
-One needs to load the appropriate ToolBox (e.g., ITC-Suite_GDAL-v3-10.atbx)
-AND first run  "GDAL_V3_10_Setup" before anything else.
+One needs to load the appropriate ToolBox (e.g., C:\ITC-Suite_GDAL_v3.14\ITC-Suite_GDAL-v3-14.atbx)
+AND first run  "aGDAL_V3_14_Setup" before anything else.
 
 This will mimic the three SET lines mentioned above for the ArcGIS environment.
 
