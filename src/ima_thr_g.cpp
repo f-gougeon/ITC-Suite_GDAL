@@ -74,7 +74,13 @@ François Gougeon  v1.5a		Nov. 2023
 			ultimate non-forest mask) there is no need to add to an existing bitmap anymore
 			and this was creating confusion on reruns, so removed that feature
 			
-			
+François Gougeon  v1.6	July 2026
+
+			- Mod. to deal more flexibly with argv using argv[argcount] in order to specify 
+			a specific input channel as a separate param or following main file name with a comma
+
+
+	
 	
 c***************************************************************	
 	
@@ -152,8 +158,9 @@ Thanks Frank (Warmerdam)
 ********************************************************************************
 */
 
-#define VERSION "v1.5a"
+#define VERSION "v1.6"
 #define PROG_NAME "IMA_THR"
+#define FILENAME 250
 
 
 #include <stddef.h>		// standart C inclusions
@@ -194,7 +201,9 @@ int 	data_type;
 
 int64 	bmsize;		// size of bitmap in bytes 
 
-int		bylines_flag = 0;		// by default proceed by full images (not by lines)
+int	bylines_flag = 0;		// by default proceed by full images (not by lines)
+int	by_lines=0, by_image=1;			// default is to read/write by image (faster),
+
 
 float		xpixsz, ypixsz;
 char 		*Proj, *Proj2, *Datum, *Datum2, *Temp,*token;
@@ -202,7 +211,7 @@ char 		*Proj, *Proj2, *Datum, *Datum2, *Temp,*token;
 double		adfGeoTransform[6], adfGeoTransform2[6];
 double 		topleftX, transformX, topleftY, transformY; 	 /* for geographic mapping */
 
-int 		ch_in, ch_out, in_ch[10], segm_in, in_segm[],thres[2];
+int 		ch_in, ch_out, in_ch[10], segm_in, in_segm[10],thres[2];
 
 
 GDALRasterBand	*piBand,*piBand2,*poBand;
@@ -237,8 +246,6 @@ struct tm * timeinfo;
 int main(int argc, char* argv[])
 {
 
-//GDALDataset	*ima_in, *ima_out;
-PixVal *nfmask, *stcmask;			// two mask bitmaps
 GDALDriver 	*piDriver, *poDriver;
 GDALRasterBand	*piBand, *poBand;
 //double		adfGeoTransform[6];
@@ -247,32 +254,41 @@ char 		**papszMetadata;
 int  	ithres;
 float 	sum;
 
-char 	ans[10], fullfilename[130], file_out[130];
-char 	*filename, *extension, temp[130];
+int 	ch_out=1, ch_in=1, no_ch=1, dbic[10], ch_no;
+
+int  	iwind, windsiz[10];
+
+int	 argcount;
+
+char 	 ans[80], answer[10];
+char	fullfilename[FILENAME], file_in[FILENAME];
+char 	file_out[FILENAME];
+char 	*filename, *extension, temp[FILENAME];
 char 	*tstring, *p, ach_in[5];
+char 	Proj3[30];
 
-
-char	basefname[130];						// ** just a pointer **
-char	basefilname[130];
+char	basefname[FILENAME];						// ** just a pointer **
+char	basefilname[FILENAME];
 int		basef_len;	
 
-char		Proj3[30];
+char  	*cptr;			// generic pointer to char
 
 PixVal		*pafScanline, *image_8b, *image_8b_out;
 uint16		*pafScanline16, *image_16b, *image_16b_out;
 
 int	by_lines=0, by_image=1;			// default is to read/write by image (faster),
 
-int 	ch_out=1, no_ch=1, input_ch[10];
 
 int	i, j, ii, jj, ofs, count;
 int64 	bitnum, bitnum2;
+int commaFlag = 0;
+
 
 //Proper Geo projection of main image
 
 Proj = (char *) CPLMalloc(2000);			// to store geo projection info
-Datum = (char *) CPLMalloc(2000);		// to store Datum info
-Temp = (char *) CPLMalloc(2000);			
+// Datum = (char *) CPLMalloc(2000);		// to store Datum info
+// Temp = (char *) CPLMalloc(2000);			
 
 
 /* Print Program Header and time */
@@ -287,15 +303,19 @@ Temp = (char *) CPLMalloc(2000);
 // Check input parameters (i.e., agrv[*])
 
 //***************************
+// Check *First argument* on command line (here, Input file name)
 
+	argcount = 1;		// use "argcount" to move more flexibly between arguments
+	
 	//printf("\n\tPresent parameters are %s %s %s %s\n\n", argv[1], argv[2], argv[3], argv[4]);
 
-	if (argv[1]== NULL) 
+	if (argv[argcount]== NULL) 
 	  {
-	  printf("\n\t PROBLEM with input image %s \n",argv[1]);
+	  printf("\n\t PROBLEM with input image %s \n",argv[argcount]);
 	  printf("Have an INPUT image as first argument on command line \n\n");
 	  printf("USAGE: ima_thr_g Main_File.ext,CH# - thres1,thres2 \n");
-	  printf("USAGE: ima_thr_g Main_File.ext,CH# bitmap thres1,thres2 \n\n");
+	  printf("USAGE: ima_thr_g Main_File.ext CH# - thres1,thres2 \n");
+	  printf("USAGE: ima_thr_g Main_File.ext,CH# outputBM thres1,thres2 \n\n");
 	  exit(-1);
 	  }  
 
@@ -303,71 +323,70 @@ Temp = (char *) CPLMalloc(2000);
 	  {
 	  printf("\n\t PROBLEM with input parameters \n\n");
 	  printf("USAGE: ima_thr_g Main_File.ext,CH# - thres1,thres2 \n");
-	  printf("USAGE: ima_thr_g Main_File.ext,CH# bitmap thres1,thres2 \n\n");
+	  printf("USAGE: ima_thr_g Main_File.ext CH# - thres1,thres2 \n");
+	  printf("USAGE: ima_thr_g Main_File.ext,CH# outputBM thres1,thres2 \n\n");
 	  exit(-1);
 	  }  
 
-if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
-	  {
-
-	  printf("\nSecond argument is \"-\" or \"#\", which implies no input bitmap to \"add to\" \n");
-	  printf("A new output bitmap will be created based on \"base file name\" \n\n"); 
-	  }	 
-	  
-	if (argv[3] == NULL) 
-	  {
-	  printf("\n\n PROBLEM with third argument%s \n",argv[3]);
-	  printf("\tHave a threshold (or range) as third argument on command line \n\n");
-	  printf("USAGE: ima_thr_g Main_File.ext,CH# - thres1,thres2 \n");
-	  printf("USAGE: ima_thr_g Main_File.ext,CH# bitmap thres1,thres2 \n\n");
-	  exit(-1);
-	  } 
-
-//***************************	  
-	  
-// Check that only one channel (if at all) is mentionned with the input image file
 
 
-	strncpy(temp, argv[1], 130);
-	//printf("Orginal First input param : %s \n", temp);
+// Check if channel number(s)is connected to file name by a comma
+
+	ch_in = 1;						// default 
+	strcpy(temp, argv[argcount]);  
+	//printf(" Temp :  %s \n", temp);
+	cptr = strtok(temp, ", "); 			// check for comma after extension
+	cptr = strtok(NULL, ", ");			// got after the comma	
+	//printf(" temp :  %s \n", temp);		// clean file name
+	//printf(" cptr :  %s \n", cptr);
+	strcpy(file_in, temp);	
+	printf(" Input Filename :  %s \n", file_in);
 	
-	p = strtok(temp, ","); 	
-	//printf("temp file name : %s \n", temp);
-	
-	strcpy(fullfilename,p);		
-	p = strtok(NULL, ",");
-	//printf("Fullfilename : %s \n", fullfilename); 
+	if(cptr != NULL)					// comma after extension
+	{
+	commaFlag = 1;	
+	ch_no = strtol(cptr,NULL, 10);			// change to integer
+	//printf(" After comma : %d\n", ch_no);	
 
-	
-	ii = 0;
-	while(p != NULL) 
-	  {
- 	  //printf("%s\n", p); 
-	  input_ch[ii++]= strtol(p,NULL, 10);
-	  p = strtok(NULL, ",");
-	  }
-	no_ch = ii;
+	ch_in = dbic[0] = ch_no ;				// for PCI code coompatibility
+	//printf(" Channel to use : %d \n", dbic[0]);
 
-	if(no_ch == 0) 
-	  {
-	  input_ch[0]=1; 
-      printf("Input channel number to use is \"unspecified\" will use first channel(1)\n\n");
-	  }
-	
-	//printf("\nNo. of channel to use %d  AND Input channel number to use: %d \n", no_ch, input_ch[0]);
+// Some programs may have a second comma and a second item	*NOT THIS ONE*
+
+	cptr = strtok(NULL, ", ");			// check for another channel 
+	if(cptr != NULL) {ch_no = strtol(cptr,NULL, 10); dbic[1]= ch_no; no_ch = 2;}					
+	if(no_ch == 2) printf("Secondary bitmap to use : %d \n", dbic[1]);
 
 	if ( no_ch > 1) 
 	  {
-	  fprintf(stdout,"\n\t##### ERROR - No. of channels to use to create a smoothed image must be one #####\n");
+	  fprintf(stdout,"\n\t##### ERROR - Number of input bitmap to use  must be only one #####\n");
 	  //printf("\n\tYou present parameters are %s %s %s %s\n\n", argv[1], argv[2], argv[3], argv[4]);
-	  goto Exit;
+	  exit(-1);
 	  }
 
-	ch_in = input_ch[0];
-	if(no_ch == 1) printf("As per user: Input image channel number to use: %d \n\n", ch_in);
+	}
+	
+// Channel numbers may be as a SEPARATE PARAM  on the cmd line (OR NADA)
+	
+	if(!commaFlag)		
+	  { 
+	  argcount++;					 // get next argument	  
+	  //printf("Argument %d: %s \n", argcount, argv[argcount]);
+	  strcpy(temp, argv[argcount]);	  
+	  ch_no = strtol(temp,NULL, 10);			// change to integer  
+	  if(ch_no == NULL) { ch_no = 1; argcount--; }		// next argument was probably a file name 
+	  }	
+	  
+	  ch_in = ch_no;		// ch_in is used in rest of prog
+	  
+	  // printf(" Input channel to use : %d \n", ch_no);
+	  // printf(" Input channel as separate arg   : %d \n", ch_in);
+	  // exit(-1);				// for debugging
 
 
-//*******************
+
+//***************************	  
+	
 
 // Create base file name   
 	
@@ -394,16 +413,77 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
 	printf("Base file name ::  %s \n", basefilname);	
 
 
-	//exit(-1);			// for debugging
+//	exit(-1);			// for debugging
+
+
+  argcount++;					 // get next argument
+
+//*************************************************
+
+// Open (or create) an OUTPUT image file name	
+//	For example:  Secteur_THR1.tif if thresholding was done on channel 1 
+// More complex name if adding to existing bitmap
+
+//*************************************************
+
+// if no output bitmap, use main image file name as base to create output bitmap name (+ CH no.)
+
+
+if ( EQUALN(argv[argcount],"-",1 ) || EQUALN(argv[argcount],"#",1 ) )
+	
+	{
+	printf("\nAn output bitmap file will be created based on \"base file name\" \n"); 
+			  
+	//basefname = strtok(fullfilename,".");
+	//basefname = strtok(basefname,"_");				
+	//printf("basefname  :  %s \n", basefname);	
+
+	//basefname = temp;	 				// fake to init basefname as a char array (just a pointer)
+	strcpy(file_out, basefilname);	
+	
+	strncat(file_out,"_THR",4); 
+	//printf("file_out :  %s \n", file_out);   
+	//itoa(ch_in,ach_in,10); 	 
+	sprintf(ach_in, "%d" , ch_in);	 	
+	strncat(file_out,ach_in,3);	  	
+	strncat(file_out,".tif",4);					// output image is forced to be a tif	
+	printf("\n\t** Output bitmap file will be named \"%s\" \n", file_out);
+	}	
+else								// if  input bitmap, just add to that name
+	{
+	//basefname = strtok(fullfilename,".");		// fake to init basefname
+	//strcpy(basefname,argv[2]);
+	//basefname = strtok(basefname,".");
+	//file_out = temp;				// fake to init file_out as char array
+	strcpy(file_out,argv[argcount]);	
+	printf("\n\t** Output bitmap file is named \"%s\" \n", file_out);
+	}
+
+	//exit(-1);		// for degugging
+
+ 
+
+    
+	  argcount++;					 // get next argument (often argument four)
+	  
+	if (argv[argcount] == NULL) 
+	  {
+	  printf("\n\n PROBLEM with last argument%s \n",argv[argcount]);
+	  printf("\tHave a threshold (or range) as third argument on command line \n\n");
+	  printf("USAGE: ima_thr_g Main_File.ext,CH# - thres1,thres2 \n");
+	  printf("USAGE: ima_thr_g Main_File.ext CH# - thres1,thres2 \n");
+	  printf("USAGE: ima_thr_g Main_File.ext,CH# outputBM thres1,thres2 \n\n");
+	  exit(-1);
+	  } 
+
 
 
 // ******
 	
 // Check if two thresholds are used is needed (e.g., argv[3] = 15,66)
-
 	//printf("\n\t Argument three : %s \n\n", argv[3]);
 
-	strcpy(temp, argv[3]);
+	strcpy(temp, argv[argcount]);
 	p = strtok(temp, ",");
 
 	ithres = 0;
@@ -440,13 +520,14 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
 
 	if (ima_in == NULL) 
 	  	{printf("\n\n PROBLEM opening input image file %s \n\n",fullfilename); exit(1);}
+	
 	fprintf(stdout,"\n\t*File %s was opened for reading\n\n",fullfilename);
 
 // Print generic info (driver used, ... )
 
-	printf( "Driver: %s/%s\n",
-          ima_in->GetDriver()->GetDescription(),
-          ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
+	// printf( "Driver: %s/%s\n",
+          // ima_in->GetDriver()->GetDescription(),
+          // ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
 
  	Pixels = ima_in->GetRasterXSize();
 	Lines = ima_in->GetRasterYSize();
@@ -461,13 +542,13 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
 
 	if( ima_in->GetProjectionRef() != NULL )
 	{
-
 	//strncpy(Proj,ima_in->GetProjectionRef(),2000);			// get full projection in to copy to output
 	strncpy(Proj,ima_in->GetProjectionRef(),strlen(ima_in->GetProjectionRef()));	// get full projection in to copy to output
 	//printf("\nProjection is '%s'\n", Proj);
 	strncpy(Proj3,ima_in->GetProjectionRef(),30);
 	printf("\nProjection is '%s'\n", Proj3);
 	}
+	
 	else printf("\nNote : No Geographic \"Projection\" within the main file\n");
 
 	printf("Geographic Data within that file\n");
@@ -486,7 +567,7 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
 
 	piBand = ima_in->GetRasterBand(ch_in);
 	
-	printf("Channel Description: %s \n\n", piBand->GetDescription() );
+	printf("Input Channel Description: %s \n", piBand->GetDescription() );
 
 // Check raster type (8 or 16 bit) and set flag PCI data Type CHN_8U=1 CHN_16U=3
 
@@ -499,54 +580,6 @@ if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )
 
 	  //exit(-1);		// for degugging
 
-//*************************************************
-
-// Open (or create) an OUTPUT image file name	
-//	For example:  Secteur_THR1.tif if thresholding was done on channel 1 
-// More complex name if adding to existing bitmap
-
-//*************************************************
-
-// if no output bitmap, use main image file name as base to create output bitmap name (+ CH no.)
-
-if ( EQUALN(argv[2],"-",1 ) || EQUALN(argv[2],"#",1 ) )			
-	{
-	//basefname = strtok(fullfilename,".");
-	//basefname = strtok(basefname,"_");				
-	//printf("basefname  :  %s \n", basefname);	
-
-	//basefname = temp;	 				// fake to init basefname as a char array (just a pointer)
-	strcpy(file_out, basefilname);	
-	
-	strncat(file_out,"_THR",4); 
-	//printf("file_out :  %s \n", file_out);   
-	//itoa(ch_in,ach_in,10); 	 
-	sprintf(ach_in, "%d" , ch_in);	 	
-	strncat(file_out,ach_in,3);	  	
-	strncat(file_out,".tif",4);					// output image is forced to be a tif	
-	printf("\n\t** Output bitmap file will be named \"%s\" \n", file_out);
-	}	
-else								// if  input bitmap, just add to that name
-	{
-	//basefname = strtok(fullfilename,".");		// fake to init basefname
-	//strcpy(basefname,argv[2]);
-	//basefname = strtok(basefname,".");
-	//file_out = temp;				// fake to init file_out as char array
-	strcpy(file_out,argv[2]);	
-	printf("\n\t** Output bitmap file is named \"%s\" \n", file_out);
-	}
-
-
-
-	//exit(-1);		// for degugging
-
- // Prepare output bitmap in memory
- 
- 
-	  printf("\nReserving memory for new output bitmap\n");	
-	  maskbitbuf = (PixVal *) calloc(bmsize,1);	// prep memory for output bitmap
-	  check_mem(maskbitbuf); 
- 
 
 /*
 //	Section was used when we had the choice of adding to an existing bitmap (choice removed in v 1.5)
@@ -671,7 +704,11 @@ MAIN:	//exit(-1);		// for degugging
 	if(data_type==CHN_16U)
 	  printf("\nAllocated %Id bytes to the input image (same for output) ",2*Pixels*(int64)Lines);
 
-// Read the whole input image IN ONE SHOT 
+
+
+
+
+// Read the whole input image IN ONE SHOT (default NOW)
 
 	printf("\nReading the whole input image in one shot ...\n");
 
@@ -687,13 +724,21 @@ MAIN:	//exit(-1);		// for degugging
 	}		// end of if(by_image)
 
 
-
-
 	//exit(-1);		// for degugging
 
 
 //****************************
 	
+	
+	// Preparing output bitmap memory
+ 
+ 
+	  printf("\nReserving memory for new output bitmap\n");	
+	  maskbitbuf = (PixVal *) calloc(bmsize,1);	// prep memory for output bitmap
+	  check_mem(maskbitbuf); 
+ 
+ 
+ 
 // Do the Thresholding of the image
 
 	printf("\n\tDoing thresholding on image. Range is %d to %d ...\n\n",thres[0],thres[1]);
@@ -707,6 +752,7 @@ MAIN:	//exit(-1);		// for degugging
 	for ( j = 1 ; j <= Pixels; j++ ) 	
 	  {
 
+	  
 	  bitnum = (i-1)*(int64)Pixels + j-1 ;	//GDAL images start at zero (similar to bitmaps), so bytenum=bitnum
 	  clearbit(maskbitbuf,bitnum);
 	  
@@ -718,7 +764,7 @@ MAIN:	//exit(-1);		// for degugging
 	    if ( (image_16b[bitnum] >= thres[0]) &&  (image_16b[bitnum] <= thres[1]) ) 
 			{setbit(maskbitbuf,bitnum);	 count++; } 
 	  
-	  //if( (i/1000)*1000 == i ) printf("%d lines done\r", i);
+	  if( (i/1000)*1000 == i ) printf("%d lines done\r", i);
 
 	  }
 	  

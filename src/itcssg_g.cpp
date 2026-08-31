@@ -3416,7 +3416,7 @@ Bypass2:
 		  }
 		
 	
-		if(TIF_File)
+		if(TIF_File)			// Tif file is an indication that we are dealing with shape files
 		  {	
 		  seg_in = (GDALDataset*) GDALOpenEx(file_TA[species], GDAL_OF_VECTOR, NULL, NULL, NULL );
 		  if( seg_in == NULL ) { printf("\n***Opening %s failed\n", file_TA[species]); exit(-1); }	  
@@ -5224,6 +5224,8 @@ void scan_for_tree_auto(int xsize, int ysize, unsigned char *full_bitmap,
   
   previous_tree = tree_list;
   unusedITC = 0;
+
+	printf("\t\t Got here in scan_for_tree_auto() \n");
 
   for (y = 2; y < ysize; y++)
   for (x = 2; x < xsize; x++) 

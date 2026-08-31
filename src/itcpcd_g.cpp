@@ -1662,7 +1662,7 @@ if (dumpflag)
   if (strncmp(odetails,"HIGH",4) == 0) strcpy(odetails,"HIGH");	/* to truncate SP or CC (not available) */
   if (strncmp(odetails,"MED",3) == 0) strcpy(odetails,"HIGH");	/* MEDIUM not available in this mode */
   printf("\nPolygon content description to be written to PLAIN file <<%s>>\n", pcdfile);
-  printf("\nLevel of details as previously requested: %s \n\n", odetails);
+  printf("Level of details for PLAIN text file (always HIGH): %s \n\n", odetails);
   
   odb_fp = fopen(pcdfile, "w");		/* Open file for database output */
   

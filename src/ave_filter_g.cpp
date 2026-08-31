@@ -80,6 +80,11 @@ History:
 			- Provenance description in the output file has a SHORT version 
 			of the input file name (not the full path, which could be long
 			when using ArcGIS
+			
+v1.6		July  2026  François Gougeon	
+
+			- Was always using channel 1 independent of user input
+			
 
 *******************************************************************************	
 
@@ -141,7 +146,7 @@ Thanks Frank (Warmerdam)
 ********************************************************************************
 */
 
-#define VERSION "v1.5a"
+#define VERSION "v1.6"
 #define PROG_NAME "AVE_FILTER_G"
 #define FILENAME 250
 
@@ -302,7 +307,11 @@ char  	*cptr;	// generic pointer to char
 	  ch_no = strtol(temp,NULL, 10);			// change to integer  
 	  if(ch_no == NULL) { ch_no = 1; argcount--; }		// next argument was probably a file name 
 	  }	
-	  printf(" Input channel to use : %d \n", ch_no);
+	  
+	  ch_in = ch_no;		// ch_in is used in rest of prog
+	  
+//	  printf(" Input channel to use : %d \n", ch_no);
+//	  printf(" Input channel as separate arg   : %d \n", ch_in);
 
 //	exit(-1);				// for debugging
 	
@@ -462,7 +471,12 @@ else								// if  input bitmap, just add to that name
 
 // Open INPUT image file
 
-	ima_in = (GDALDataset *) GDALOpen( file_in, GA_ReadOnly );
+	//ima_in = (GDALDataset *) GDALOpen( file_in, GA_ReadOnly );
+	
+
+	 const GDALAccess eAccess = GA_ReadOnly;
+	ima_in = (GDALDataset *) GDALOpen( file_in, eAccess );
+	
 
 	if (ima_in == NULL) 
 	  	{ printf("\n\n PROBLEM opening input image file %s \n\n",file_in); exit(1); }
@@ -471,9 +485,9 @@ else								// if  input bitmap, just add to that name
 
 // Print generic info (driver used, ... )
 
-	printf( "Driver: %s/%s\n",
-          ima_in->GetDriver()->GetDescription(),
-          ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
+	// printf( "Driver: %s/%s\n",
+          // ima_in->GetDriver()->GetDescription(),
+          // ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
 
  	Pixels = ima_in->GetRasterXSize();
 	Lines = ima_in->GetRasterYSize();

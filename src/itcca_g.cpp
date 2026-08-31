@@ -462,7 +462,7 @@ c
 c Fran\E7ois Gougeon  v5.4		Aug. 2025
 c
 c       - To deal with Linux use of "slash" versus Windows "backslash", 
-c           finally realizing that Windows can do both, so prog for Linux
+c           finally realizing that Windows can do both, so program for "slash"
 c           and using path_len rather than jj
 c			
 c
@@ -592,34 +592,41 @@ c	> itcca_g BaseFilename ISOLBIT TESTSEG  CLASSBIT BITBOUND
 #define BITMAPS     32
 #define MAX_INTERCEPT 100
 
-#include <string.h>
-#include <math.h>
 
 #ifdef PARTIAL_GDAL
-
 extern "C" {
 #include "pci.h"
 #include "itc_io.h"
 #include "bitops.h"
 }
-
 #endif
 
-
-#include "gdal_priv.h"		// For GDAL library
-#include "ogrsf_frmts.h"	// For OGR
-#include "itc_io_g.h"		// my newest GDAL image/bitmap input/output
-#include "bitops.h"			// bit operations on bitmaps (mostly macros to be faster)
-
-
+/* 
 #include "ogr_api.h"
 #include "ogr_srs_api.h"
 //#include "commonutils.h"
-
 #include "cpl_port.h"
- 
+
 #include <stdarg.h>
 #include <stddef.h>
+ */
+
+#include <stddef.h>		// standart C inclusions
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <limits.h>
+#include <time.h>       // time_t, struct tm, time, localtime
+
+//#include "gdal_priv.h"		// For GDAL library
+//#include "ogrsf_frmts.h"	// For OGR
+
+
+#include "ITC-Suite_g.h"		// my newest GDAL variable setup
+#include "itc_io_g.h"		// my newest GDAL image/bitmap input/output
+#include "bitops.h"		// bit operations on bitmaps (mostly macros to be faster)
+
+
 
 
 /* function declarations */
@@ -898,7 +905,7 @@ Arg1:
 	//printf("Full Filename:  %s \n", fullfilename);
 	//printf("\n Fullfilename string length is  %d \n", (int)strlen(fullfilename));
 	
-	jj = 0;
+	jj = 0; path_len = 0;
 	for (ii=0; ii < strlen(fullfilename); ii++)			// could be slash or backslash
 	  {
 	  jj = strlen(fullfilename) - ii;		// from the end of full file name

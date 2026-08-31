@@ -6,6 +6,8 @@ Author: 		François A. Gougeon
 
 Date:			Nov 2025
 
+Version 1.1  	Aug 2026   Debugging (and for Linux)
+
 Description:
 
 	Program to colorize a bitmap
@@ -16,7 +18,7 @@ Description:
 	For example, we may like a water mask  to be blue, ITCs to be green, etc.
 
 		
-	> bmcolor_g PP833596_Water.tif 0,0,100   ! change default color of bitmap to blue
+	> bmcolor_g PRF_Water.tif 0,0,100   ! change default color of bitmap to blue
 	
 	
 	François A. Gougeon, Ph.D.
@@ -32,7 +34,7 @@ Description:
 *****************************************
 */
 
-#define VERSION	"v1.0a"
+#define VERSION	"v1.1a"
 #define PROG_NAME "BMCOLOR_G"
 #define FILENAME  250
 
@@ -158,7 +160,7 @@ int 	input_color[4];
 	  {
 	  printf("\n\t **PROBLEM** with input image %s \n",argv[argcount]);
 	  printf("Have an INPUT bitmap as first argument on command line \n\n");  	  
-	  printf("\nUSAGE: bmcolor_g PP3386_Water.tif 0,0,100  \n\n");  
+	  printf("\nUSAGE: bmcolor_g PRF_Water.tif 0,0,100  \n\n");  
 	  exit(-1);
 	  }  
 	  	  
@@ -273,44 +275,52 @@ fprintf(stdout,"\nReading input bitmap\ ...n");
 
 // 		Create colour table
 
-	GDALColorTable * col_tab_out = nullptr;		// declare output colour table pointer
-	col_tab_out =  &GDALColorTable();			// construct output colour table	
+//	GDALColorTable * col_tab_out = nullptr;		// declare output colour table pointer
+//	col_tab_out =  &GDALColorTable();			// construct output colour table	
+
+    GDALColorTable *col_tab_out = piBand->GetColorTable();	// get existing color table
+
 	
 // 	Create Color entries
 	
-    GDALColorEntry * col_ent_out = nullptr;		// declare
-	col_ent_out = &GDALColorEntry();			// construct (i.e., reserve memory)
+    // GDALColorEntry * col_ent_out = nullptr;		// declare
 	
-	col_ent_out->c1 = 0; col_ent_out->c2 = 0; col_ent_out->c3 = 0; col_ent_out->c4 = 0;	
-	col_tab_out->SetColorEntry(0, col_ent_out);
+//	GDALColorEntry * col_ent_out;		// declare	
+//	col_ent_out = &GDALColorEntry();			// construct (i.e., reserve memory)
 
-//	col_ent_out->c1 = 255; col_ent_out->c2 = 255; col_ent_out->c3 = 255; col_ent_out->c4 = 255;	
-	col_ent_out->c1 = 0; col_ent_out->c2 = 100; col_ent_out->c3 = 0; col_ent_out->c4 = 255;		// for TESTING Green
+	GDALColorEntry col_ent_out;		// declare
+	
+	col_ent_out.c1 = 0; col_ent_out.c2 = 0; col_ent_out.c3 = 0; col_ent_out.c4 = 0;	
+	
+	col_tab_out->SetColorEntry(0, &col_ent_out);
 
-	col_ent_out->c1 = input_color[0]; col_ent_out->c2 = input_color[1]; 		// user entered colours
-	col_ent_out->c3 = input_color[2]; col_ent_out->c4 = input_color[3];	
 
-	col_tab_out->SetColorEntry(1, col_ent_out);
+	col_ent_out.c1 = input_color[0]; col_ent_out.c2 = input_color[1]; 		// user entered colours
+	col_ent_out.c3 = input_color[2]; col_ent_out.c4 = input_color[3];	
+//	col_ent_out.c1 = 0; col_ent_out.c2 = 100; col_ent_out.c3 = 0; col_ent_out.c4 = 255;	// for TESTING Green
+
+	col_tab_out->SetColorEntry(1, &col_ent_out);
 
 //	col_tab_out->SetColorEntry(2, col_ent_out);  // For testing
 
 //	col_tab_out->SetColorEntry(2, (0,0,120));   // For testing
 
 
+
+
 //  Print resulting color table to VERIFY
 
-
-	const GDALColorEntry * col_ent = nullptr;			// declare
+/* 	const GDALColorEntry * col_ent = nullptr;			// declare
 	col_ent = &GDALColorEntry();			// construct (i.e., reserve memory)	 
 	
 	col_ent = col_tab_out->GetColorEntry(0);
- 	printf("\t\t* Color entries for OUTPUT  0  : %d %d %d %d \n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
+ 	printf("\t\t* Color entries for slot  0  : %d %d %d %d \n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
 
 	col_ent = col_tab_out->GetColorEntry(1);
- 	printf("\t\t* Color entries for OUTPUT  1  : %d %d %d %d \n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
-
+ 	printf("\t\t* Color entries for slot  1  : %d %d %d %d \n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
+ */
 //	col_ent = col_tab_out->GetColorEntry(2);
-// 	printf("\t\t* Color entries for OUTPUT  2  : %d %d %d %d \n\n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
+// 	printf("\t\t* Color entries for slot  2  : %d %d %d %d \n\n", col_ent->c1, col_ent->c2, col_ent->c3, col_ent->c4);
 
 
 
@@ -322,13 +332,19 @@ fprintf(stdout,"\nReading input bitmap\ ...n");
 
 	printf("\n\tWriting NEW Color Table to file \"%s\" \n", file_in);
 
+	//piBand->SetColorTable(col_tab_out);
+	
 	piBand->SetColorTable(col_tab_out);
+	
 	piBand->SetColorInterpretation(GCI_PaletteIndex);			// typically not necessary
 	
 // Set "nodata values" for software that need  that
 
 	//printf("\n\n\tWriting NoDataValue and Description  \n\n");	
-	piBand->SetNoDataValue(0);
+	piBand->SetNoDataValue(0);			// typically not necessary
+
+
+
 
 // If using a separate output file
 
@@ -349,12 +365,15 @@ fprintf(stdout,"\nReading input bitmap\ ...n");
 
 */
 
+
+
 // Close input and output images
 
-Exit:	printf("\nClosing image file (a bitmap) and exiting program. \n");
+Exit:	printf("\nClosing image file (a bitmap) with new colors \n");
 
-	GDALClose(file_in);
+//	GDALClose(file_in);		// creates problems ????
 //	GDALClose(file_out);
+
 
 time (&rawtime);
 timeinfo = localtime (&rawtime);

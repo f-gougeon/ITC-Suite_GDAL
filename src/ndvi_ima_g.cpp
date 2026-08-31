@@ -225,9 +225,9 @@ int		basef_len;
 
 // Print generic info (driver used, ... )
 
-	printf( "Driver: %s/%s\n",
-          ima_in->GetDriver()->GetDescription(),
-          ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
+	// printf( "Driver: %s/%s\n",
+          // ima_in->GetDriver()->GetDescription(),
+          // ima_in->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
 
 	printf( "Image size is %d x %d x %d\n\n",
           Pixels = ima_in->GetRasterXSize(), Lines = ima_in->GetRasterYSize(), Channels = ima_in->GetRasterCount() );
