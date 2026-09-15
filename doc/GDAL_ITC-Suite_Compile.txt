@@ -13,9 +13,9 @@ REM	Compiling **MUST BE DONE** from the DESTDIR producing for a particular GDAL 
 REM	of the ITC Suite (similar to the various PCI versions)
 
 REM 	Francois Gougeon
-REM	2024-2025
+REM	2024-2026
 
-REM	For the most modern stuff -- go past the 7 lines of Asterix 
+REM	*** NOTE *** For the most modern stuff -- go past the 7 lines of Asterix 
 
 REM *****************************************************************
 
@@ -396,7 +396,7 @@ REM		For Visual Studio 2022   v17.5(x64) on L-VIC-A148460 (on Dell laptop - W11)
 call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall" amd64
 
 
-REM *** POSSIBLE ADDITIONS  ***
+REM *** POSSIBLE ADDITIONS  ***	depending on your current "Windows Kits"
 
 set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt;%INCLUDE%
 set INCLUDE=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um;%INCLUDE%
@@ -470,7 +470,7 @@ REM	set CL= /MD
 
 REM 	set LINK=gdal_i.lib  proj_i.lib  User32.lib /subsystem:console /incremental:no /machine:x64 /DEFAULTLIB:MSVCRT /STACK:0X20000000
 
-REM               *** proj_i.lib ***  not needed for GDAL  Version 3.10.0
+REM               *** proj_i.lib ***  not needed for GDAL Version 3.10.0
 
 
 set CL= /MD 
@@ -548,9 +548,11 @@ set CL= /MD /std:c++17
 
 set LIB=C:\gdal_v3.14\lib;%LIB%
 set INCLUDE=C:\gdal_v3.14\include;%INCLUDE%
+set CL= /MD /std:c++17
+
 set DESTDIR=C:\ITC-Suite_GDAL_v3.14\exe
 cd  %DESTDIR%
-set CL= /MD /std:c++17
+
 
 
 
